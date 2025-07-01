@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import loginImg from "../assets/login.jpg";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
   const {
@@ -10,9 +12,27 @@ const Login = () => {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
-    console.log("Login Data:", data);
-    // Add API call here
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) navigate("/home");
+  }, [user, navigate]);
+
+  const onSubmit = async (data) => {
+    setApiError("");
+    setLoading(true);
+    try {
+      await login(data.email, data.password);
+      navigate("/home");
+    } catch (err) {
+      setApiError(err?.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,9 +92,7 @@ const Login = () => {
                 className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.email.message}
-                </p>
+                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
               )}
             </div>
 
@@ -87,17 +105,12 @@ const Login = () => {
                 type="password"
                 {...register("password", {
                   required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Minimum 6 characters required",
-                  },
+                  minLength: { value: 6, message: "Minimum 6 characters required" },
                 })}
                 className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.password.message}
-                </p>
+                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
               )}
               <div className="text-right mt-1">
                 <a
@@ -109,24 +122,45 @@ const Login = () => {
               </div>
             </div>
 
+            {/* API Error */}
+            {apiError && (
+              <p className="text-red-600 text-sm font-medium text-center">
+                {apiError}
+              </p>
+            )}
+
             {/* Submit Button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
+              disabled={loading}
+              className={`w-full py-2 rounded-md transition text-white ${
+                loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              }`}
             >
-              Log In
+              {loading ? "Logging in..." : "Log In"}
             </motion.button>
           </form>
+
+          {/* Social Login (Placeholder) */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600 mb-2">or continue with</p>
+            <div className="flex gap-3 justify-center">
+              <button className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">
+                Google
+              </button>
+              <button className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">
+                GitHub
+              </button>
+              {/* Add real handlers later */}
+            </div>
+          </div>
 
           {/* Sign Up Prompt */}
           <p className="text-sm text-center text-gray-600 mt-6">
             Don’t have an account?{" "}
-            <a
-              href="/signup"
-              className="text-blue-600 hover:underline font-medium"
-            >
+            <a href="/signup" className="text-blue-600 hover:underline font-medium">
               Sign up
             </a>
           </p>

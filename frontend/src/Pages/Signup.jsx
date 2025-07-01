@@ -1,7 +1,11 @@
 import React from "react";
+import { useState } from "react";
 import signupImg from "../assets/signup.jpg";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
+import { register as registerUser } from "../api/auth"; // ✅ API call
+import { useAuth } from "../context/AuthContext"; // ✅ AuthContext
+import { useNavigate } from "react-router-dom";
 
 // Animation Variants
 const fadeIn = {
@@ -10,15 +14,28 @@ const fadeIn = {
 };
 
 const Signup = () => {
+  const { login } = useAuth(); // ✅ So we can log user in after registration
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  const onSubmit = (data) => {
-    console.log("Signup Data:", data);
-    // Add API call here
+
+ 
+  const [successMsg, setSuccessMsg] = useState("");
+  const onSubmit = async (data) => {
+    try {
+     await registerUser(data);
+       setSuccessMsg("✅ Registration successful! Please check your email to verify your account.");
+    // Auto-login
+   
+    } catch (err) {
+      console.error("Signup Error:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Signup failed");
+    }
   };
 
   return (
@@ -64,7 +81,11 @@ const Signup = () => {
           <p className="text-sm text-gray-600 mb-6">
             Set up your dashboard, choose your career path, and start your skill journey.
           </p>
-
+{successMsg && (
+  <div className="bg-green-100 text-green-800 border border-green-300 px-4 py-3 rounded mb-5 text-sm">
+    {successMsg}
+  </div>
+)}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             {/* Username */}
             <div>
