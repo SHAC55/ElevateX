@@ -1,8 +1,14 @@
 import React from 'react'
+import { Routes,Route } from 'react-router-dom'
+import Landingpage from './Pages/Landingpage'
 
 const App = () => {
   return (
-    <div className=''>ElevateX</div>
+   <>
+   <Routes>
+    <Route path='/' element={<Landingpage/>}/>
+   </Routes>
+   </>
   )
 }
 
