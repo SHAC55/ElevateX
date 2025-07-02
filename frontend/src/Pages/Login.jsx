@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 
 const Login = () => {
   const {
@@ -143,19 +145,26 @@ const Login = () => {
             </motion.button>
           </form>
 
-          {/* Social Login (Placeholder) */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600 mb-2">or continue with</p>
-            <div className="flex gap-3 justify-center">
-              <button className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">
-                Google
-              </button>
-              <button className="bg-gray-100 px-4 py-2 rounded-md hover:bg-gray-200">
-                GitHub
-              </button>
-              {/* Add real handlers later */}
-            </div>
-          </div>
+    
+<div className="mt-6 text-center">
+  <p className="text-sm text-gray-600 mb-2">or continue with</p>
+  <div className="flex gap-4 justify-center">
+    <a
+      href="http://localhost:5000/api/auth/google"
+      className="flex items-center justify-center bg-white border border-gray-300 rounded-full p-3 hover:shadow-md transition"
+      title="Continue with Google"
+    >
+      <FcGoogle size={24} />
+    </a>
+    <a
+      href="http://localhost:5000/api/auth/github"
+      className="flex items-center justify-center bg-white border border-gray-300 rounded-full p-3 hover:shadow-md transition"
+      title="Continue with GitHub"
+    >
+      <FaGithub size={24} className="text-black" />
+    </a>
+  </div>
+</div>
 
           {/* Sign Up Prompt */}
           <p className="text-sm text-center text-gray-600 mt-6">

@@ -9,6 +9,7 @@ import VerifyEmail from "./Pages/VerifyEmail"; // adjust path if needed
 import ProtectedRoute from './Components/ProtectedRoute';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
+import OAuthSuccessPage from './Pages/OauthSuccess';
 
 const App = () => {
   return (
@@ -18,6 +19,7 @@ const App = () => {
        <Route path="/verify-email" element={<VerifyEmail />} />
        <Route path="/forgot-password" element={<ForgotPassword />} />
        <Route path="/reset-password" element={<ResetPassword />} />
+         <Route path="/oauth-success" element={<OAuthSuccessPage />} />
       <Route path="/signup" element={<Signup />} />
       <Route
         path="/home"
