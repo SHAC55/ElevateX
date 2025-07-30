@@ -1,35 +1,93 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Landingpage from './Pages/Landingpage';
 import Login from './Pages/Login';
 import Signup from './Pages/Signup';
-import HomePage from './Pages/HomePage'; // Add your protected component
-import VerifyEmail from "./Pages/VerifyEmail"; // adjust path if needed
-
+import HomePage from './Pages/HomePage';
+import VerifyEmail from './Pages/VerifyEmail';
 import ProtectedRoute from './Components/ProtectedRoute';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
 import OAuthSuccessPage from './Pages/OauthSuccess';
+import SidebarNav from './Components/SidebarNav';
+import CareerOS from './Pages/CareerOS';
+import Marketplace from './Pages/Marketplace';
+import Mockinterview from './Pages/Mockinterview';
+import Resume from './Pages/Resume';
+import Portfolio from './Pages/Portfolio';
 
 const App = () => {
+  const location = useLocation();
+
+  // Define routes where SidebarNav should be visible
+  const sidebarRoutes = ['/home','/career-os','/marketplace','/mock-interview',"/resume-tools",'/portfolio'];
+
   return (
-    <Routes>
-      <Route path="/" element={<Landingpage />} />
-      <Route path="/login" element={<Login />} />
-       <Route path="/verify-email" element={<VerifyEmail />} />
-       <Route path="/forgot-password" element={<ForgotPassword />} />
-       <Route path="/reset-password" element={<ResetPassword />} />
-         <Route path="/oauth-success" element={<OAuthSuccessPage />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+    <>
+    <div className='flex'>
+      {sidebarRoutes.includes(location.pathname) && <SidebarNav />}
+
+      <Routes>
+        <Route path="/" element={<Landingpage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/oauth-success" element={<OAuthSuccessPage />} />
+
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career-os"
+          element={
+            <ProtectedRoute>
+              <CareerOS />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute>
+              <Marketplace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mock-interview"
+          element={
+            <ProtectedRoute>
+              <Mockinterview/>
+            </ProtectedRoute>
+          }
+        />
+         <Route
+          path="/resume-tools"
+          element={
+            <ProtectedRoute>
+              <Resume/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portfolio"
+          element={
+            <ProtectedRoute>
+              <Portfolio/>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+
+      </div>
+    </>
   );
 };
 
