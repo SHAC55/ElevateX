@@ -15,6 +15,7 @@ import Marketplace from './Pages/Marketplace';
 import Mockinterview from './Pages/Mockinterview';
 import Resume from './Pages/Resume';
 import Portfolio from './Pages/Portfolio';
+import CareerForm from './Pages/CareerForm';
 
 const App = () => {
   const location = useLocation();
@@ -81,6 +82,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <Portfolio/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career-form"
+          element={
+            <ProtectedRoute>
+              <CareerForm/>
             </ProtectedRoute>
           }
         />
