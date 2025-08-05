@@ -1,25 +1,34 @@
-import React, { useState } from 'react'
-import Unselectedpath from '../Components/Unselectedpath'
+
+import React, { useState, useEffect } from 'react';
+import CareerStatus from './CareerStatus';
+import UnselectedPath from '../Components/UnselectedPath';
+import { getCareerStatus } from '../api/career';
 
 const CareerOS = () => {
+  const [status, setStatus] = useState(null);
 
-  const[pathSelected,setPathSelected] = useState(false)
+  const refreshStatus = async () => {
+    try {
+      const res = await getCareerStatus();
+      setStatus(res.status);
+    } catch (err) {
+      console.error('Error fetching status:', err);
+    }
+  };
 
-  return (
-    <div className='w-full'>
-      {
-        pathSelected ? (
-          <div>
-            pathselectred
-          </div>
-        ) : (
-          <div>
-            <Unselectedpath/>
-          </div>
-        )
-      }
-    </div>
-  )
-}
+  useEffect(() => {
+    refreshStatus();
+  }, []);
 
-export default CareerOS
+return (
+  <div className='w-full'>
+    {status === 'chosen' ? (
+      <CareerStatus refreshStatus={refreshStatus} /> // ✅ pass here
+    ) : (
+      <UnselectedPath refreshStatus={refreshStatus} />
+    )}
+  </div>
+);
+};
+
+export default CareerOS;

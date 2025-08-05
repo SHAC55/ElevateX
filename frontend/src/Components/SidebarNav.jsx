@@ -126,7 +126,7 @@ const SidebarNav = () => {
 
         {/* User Info & Logout */}
         <footer className="flex items-center gap-3 p-3 rounded-md mb-6 border border-gray-300">
-         <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" className="w-10" alt="" srcset="" />
+         <img src="https://cdn-icons-png.flaticon.com/128/2202/2202112.png" className="w-10" alt="" srcSet="" />
           <div className="flex flex-col overflow-hidden">
             <h3 className="text-base font-semibold truncate max-w-[160px]">
               {user.username}

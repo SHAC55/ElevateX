@@ -4,7 +4,7 @@ import { MdQuiz, MdTrackChanges } from "react-icons/md";
 import { RiRoadMapLine } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 
-const UnselectedPath = () => {
+const UnselectedPath = ( {refreshStatus}) => {
   const navigate = useNavigate();
 
   return (

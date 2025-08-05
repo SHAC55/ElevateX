@@ -1,0 +1,5 @@
+/pages/CareerStatus.jsx     isme career ka status dikha re apun.
+/components/EditCareer.jsx    isme career edit krenge
+/components/ResetCareer.jsx isme career choices rest krre apun 
+AI FOLDER IN components
+pages/CareerPlanPage.jsx

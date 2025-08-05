@@ -16,6 +16,8 @@ import Mockinterview from './Pages/Mockinterview';
 import Resume from './Pages/Resume';
 import Portfolio from './Pages/Portfolio';
 import CareerForm from './Pages/CareerForm';
+import CareerStatus from './Pages/CareerStatus';
+import CareerPlanPage from "./Pages/CareerPlanPage";
 
 const App = () => {
   const location = useLocation();
@@ -90,6 +92,22 @@ const App = () => {
           element={
             <ProtectedRoute>
               <CareerForm/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career/status"
+          element={
+            <ProtectedRoute>
+              <CareerStatus/>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career/plan"
+          element={
+            <ProtectedRoute>
+              <CareerPlanPage />
             </ProtectedRoute>
           }
         />

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import { useNavigate } from 'react-router-dom';
+import { chooseCareer } from '../api/career';
 const questions = [
   {
     tag: 'STEP 1 : Know you better - Interest Mapping',
@@ -98,6 +99,7 @@ const questions = [
 ];
 
 const CareerForm = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
   const {
@@ -118,16 +120,21 @@ const CareerForm = () => {
     },
   });
 
-  const onSubmit = (data) => {
-    console.log('Form submitted:', data);
+const onSubmit = async (data) => {
+  console.log('Form submitted:', data);
 
-    toast.success('Form submitted successfully!', {
-      position: 'top-right',
-      autoClose: 3000,
-    });
+  try {
+    const res = await chooseCareer(data);
+    toast.success('Career choice saved successfully! 🎉');
+    setTimeout(() => {
+      navigate('/career-os'); // 🔁 Redirect
+    }, 1500); // Optional delay for toast visibility
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || 'Failed to save career choice.');
+  }
+};
 
-    // Here you can send `data` to backend or AI API
-  };
 
   const nextStep = async () => {
     const valid = await trigger(questions[step].name);
