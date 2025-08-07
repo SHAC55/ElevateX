@@ -1,17 +1,8 @@
+
 import React, { useState } from "react";
 import skill from "../assets/skillsDash.png";
 
-const Skillsdash = () => {
-  const skills = [
-    { name: "HTML", level: "Advanced" },
-    { name: "CSS", level: "Advanced" },
-    { name: "JavaScript", level: "Intermediate" },
-    { name: "React", level: "Intermediate" },
-    { name: "Node.js", level: "Beginner" },
-    { name: "MongoDB", level: "Beginner" },
-    { name: "Git & GitHub", level: "Intermediate" },
-  ];
-
+const Skillsdash = ({ skills = {} }) => {
   const [showAll, setShowAll] = useState(false);
 
   const getColor = (level) => {
@@ -27,46 +18,53 @@ const Skillsdash = () => {
     }
   };
 
-  // Limit to first 4 unless showAll is true
-  const visibleSkills = showAll ? skills : skills.slice(0, 4);
+  const renderSkillBlock = (category, items) => {
+    const visible = showAll ? items : items.slice(0, 4);
+    return (
+      <div className="mb-4">
+        <h3 className="font-semibold text-lg mb-2">{category}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {visible.map((s, i) => (
+            <div
+              key={i}
+              className={`flex items-center justify-between p-3 rounded-lg ${getColor(
+                s.level || "Intermediate"
+              )} transition`}
+            >
+              <span className="font-medium">{s.name || s}</span>
+              <span className="text-sm italic">{s.level || "Intermediate"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const techSkills = skills.technical || [];
+  const softSkills = skills.soft || [];
 
   return (
     <div className="bg-gray-50 rounded-xl p-4 shadow-sm">
       <header className="flex items-center gap-3 mb-4 justify-between">
         <div className="flex gap-2">
-        <img src={skill} alt="Skills" className="w-10 h-10" />
-        <h1 className="text-2xl font-bold text-gray-800">Skills</h1>
+          <img src={skill} alt="Skills" className="w-10 h-10" />
+          <h1 className="text-2xl font-bold text-gray-800">Skills</h1>
         </div>
-
-        {skills.length > 6 && (
-        <div className="flex justify-center mt-4">
+        {(techSkills.length > 4 || softSkills.length > 4) && (
           <button
             onClick={() => setShowAll(!showAll)}
             className="text-blue-600 hover:underline text-sm font-medium"
           >
             {showAll ? "View Less" : "View More"}
           </button>
-        </div>
-      )}
+        )}
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {visibleSkills.map((s, i) => (
-          <div
-            key={i}
-            className={`flex items-center justify-between p-3 rounded-lg ${getColor(
-              s.level
-            )} transition`}
-          >
-            <span className="font-medium">{s.name}</span>
-            <span className="text-sm italic">{s.level}</span>
-          </div>
-        ))}
-      </div>
-
-      
+      {renderSkillBlock("Technical Skills", techSkills)}
+      {renderSkillBlock("Soft Skills", softSkills)}
     </div>
   );
 };
+
 
 export default Skillsdash;

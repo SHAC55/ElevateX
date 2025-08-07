@@ -1,23 +1,25 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import certificate from "../assets/certificate.png";
+import { fetchUserCertificates } from "../api/career";
+import { Link } from "react-router-dom";
 
 const Certificate = () => {
-  const certifications = [
-    {
-      name: "Frontend Development - Coursera",
-      img: "https://static.toiimg.com/thumb/msid-88342540,width-400,resizemode-4/88342540.jpg",
-    },
-    {
-      name: "Backend with Node.js - Udemy",
-      img: "https://i.etsystatic.com/11323145/r/il/7f7042/1489349106/il_fullxfull.1489349106_o3z1.jpg",
-    },
-    {
-      name: "Cloud Computing - Google",
-      img: "https://cdn.pixabay.com/photo/2013/07/12/19/21/certificate-154584_960_720.png",
-    },
-  ];
-
+  const [certifications, setCertifications] = useState([]);
   const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await fetchUserCertificates();
+        setCertifications(data);
+      } catch (err) {
+        console.error("Failed to load certificates:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const visibleCerts = showAll ? certifications : certifications.slice(0, 2);
 
@@ -38,21 +40,39 @@ const Certificate = () => {
         )}
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {visibleCerts.map((cert, index) => (
-          <div
-            key={index}
-            className="bg-white border rounded-lg shadow-sm p-3 hover:shadow-md transition"
-          >
-            <img
-              src={cert.img}
-              alt={cert.name}
-              className="w-full h-40 object-contain mb-2 rounded"
-            />
-            <h2 className="text-md font-semibold text-gray-800">{cert.name}</h2>
-          </div>
-        ))}
+      {/* Always show test link */}
+      <div className="mb-4">
+        <Link
+          to="/test"
+          className="inline-block bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700 transition"
+        >
+          Take Certification Test
+        </Link>
       </div>
+
+      {certifications.length === 0 ? (
+        <p className="text-sm text-gray-500">
+          No certificates yet. Take the test to earn your first certificate!
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {visibleCerts.map((cert, index) => (
+            <div
+              key={index}
+              className="bg-white border rounded-lg shadow-sm p-3 hover:shadow-md transition"
+            >
+              <img
+                src={cert.certificateUrl}
+                alt={cert.name || `Certificate ${index + 1}`}
+                className="w-full h-40 object-contain mb-2 rounded"
+              />
+              <h2 className="text-md font-semibold text-gray-800">
+                Score: {cert.score || "N/A"}
+              </h2>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

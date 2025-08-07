@@ -1,30 +1,8 @@
+
 import React from 'react';
 import project from '../assets/project.png';
 
-const MegaprjDash = () => {
-  const Projects = [
-    {
-      img: "https://i.pinimg.com/736x/48/50/26/485026fb95e5e3849332c2a2abf40807.jpg",
-      title: 'e-Commerce',
-      type: 'Full stack',
-    },
-    {
-      img: "https://i.pinimg.com/1200x/17/34/59/173459772512a2e58235930ec19fe0c9.jpg",
-      title: 'AI Saas app',
-      type: 'Full stack',
-    },
-    {
-      img: "https://i.pinimg.com/1200x/ec/b8/96/ecb89619a6090ba8201fedca09652b10.jpg",
-      title: 'Playzone',
-      type: 'Backend',
-    },
-    {
-      img: "https://i.pinimg.com/1200x/49/20/72/492072b9b9b016f611e66aa9dbeb7cc7.jpg",
-      title: 'Product Landing page',
-      type: 'Frontend',
-    },
-  ];
-
+const MegaprjDash = ({ projects = [] }) => {
   return (
     <div className="bg-gray-50 rounded-xl p-4">
       <header className="flex items-center gap-3 mb-4">
@@ -33,13 +11,11 @@ const MegaprjDash = () => {
       </header>
 
       <div className="space-y-4">
-        {Projects.map((proj, i) => (
-          <div
-            key={i}
-            className="flex items-center border transition rounded-lg p-3 gap-4"
-          >
+        {projects.length === 0 && <p>No projects yet.</p>}
+        {projects.map((proj, i) => (
+          <div key={i} className="flex items-center border transition rounded-lg p-3 gap-4">
             <img
-              src={proj.img}
+              src={proj.image || "https://via.placeholder.com/60"} // fallback
               alt="projImg"
               className="w-16 h-16 object-cover rounded-md"
             />

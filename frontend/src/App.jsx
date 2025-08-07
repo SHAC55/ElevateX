@@ -18,6 +18,8 @@ import Portfolio from './Pages/Portfolio';
 import CareerForm from './Pages/CareerForm';
 import CareerStatus from './Pages/CareerStatus';
 import CareerPlanPage from "./Pages/CareerPlanPage";
+import Certificate from './Components/Certificate';
+import CertificateTest from './Components/CertificateTest';
 
 const App = () => {
   const location = useLocation();
@@ -108,6 +110,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <CareerPlanPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/test"
+          element={
+            <ProtectedRoute>
+              <CertificateTest />
             </ProtectedRoute>
           }
         />
