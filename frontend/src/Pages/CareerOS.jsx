@@ -23,7 +23,7 @@ const CareerOS = () => {
 return (
   <div className='w-full'>
     {status === 'chosen' ? (
-      <CareerStatus refreshStatus={refreshStatus} /> // ✅ pass here
+      <CareerStatus refreshStatus={refreshStatus} /> 
     ) : (
       <UnselectedPath refreshStatus={refreshStatus} />
     )}
