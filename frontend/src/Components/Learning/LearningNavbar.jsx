@@ -319,7 +319,7 @@ const LearningNavbar = () => {
     profile?.profilePicture?.trim() || "https://cdn-icons-png.flaticon.com/128/2202/2202112.png";
 
   const navItems = [
-    { to: "/career/plan/skills", label: "Skills", icon: <FaLightbulb /> },
+    { to: "/career/plan/skills", label: "SkillsToLearn", icon: <FaLightbulb /> },
     { to: "/career/plan/roadmap", label: "Roadmap", icon: <FaMap /> },
     { to: "/career/plan/projects", label: "Projects", icon: <FaTasks /> },
     { to: "/career/plan/resources", label: "Resources", icon: <FaBook /> },

@@ -1,15 +1,8 @@
-/pages/CareerStatus.jsx     isme career ka status dikha re apun.
-/components/EditCareer.jsx    isme career edit krenge
-/components/ResetCareer.jsx isme career choices rest krre apun 
-AI FOLDER IN components
-pages/CareerPlanPage.jsx
-components/CertificateTest.jsx
+src/Components/Learning/ProgressBar.jsx
 
-
-
-
-
-
-
-
-
+src/Components/Learning/EmptyState.jsx
+src/Components/Learning/modulepicker
+src/Components/Learning/SkillCard.jsx
+src/Components/Learning/TopicList.jsx
+StatusFilter.jsx
+SkillStudyModal.jsx
