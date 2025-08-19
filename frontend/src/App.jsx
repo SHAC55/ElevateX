@@ -21,6 +21,7 @@ import CareerPlanPage from "./Pages/CareerPlanPage";
 import Certificate from './Components/Certificate';
 import CertificateTest from './Components/CertificateTest';
 
+
 const App = () => {
   const location = useLocation();
 
@@ -121,6 +122,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+   
       </Routes>
 
       </div>

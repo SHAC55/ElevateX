@@ -4,3 +4,12 @@
 AI FOLDER IN components
 pages/CareerPlanPage.jsx
 components/CertificateTest.jsx
+
+
+
+
+
+
+
+
+
