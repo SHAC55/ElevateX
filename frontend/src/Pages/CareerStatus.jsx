@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   getCareerStatus,
@@ -6,11 +7,17 @@ import {
   generateCareerPlan,
   getCareerPlan,
 } from '../api/career';
+import {  FiUser } from 'react-icons/fi';
+
+
 
 import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import EditCareer from '../Components/EditCareer';
 import ResetCareer from '../Components/ResetCareer';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiChevronRight, FiLoader } from 'react-icons/fi';
 
 import {
   FaUserGraduate,
@@ -19,17 +26,19 @@ import {
   FaGlobe,
   FaBullseye,
   FaClock,
-  FaCalendarCheck
+  FaCalendarCheck,
+  FaRocket,
+  FaChartLine
 } from 'react-icons/fa';
 
 const iconMap = {
-  interest: <FaLightbulb className="text-indigo-500 text-xl" />,
-  skills: <FaLaptopCode className="text-indigo-500 text-xl" />,
-  education: <FaUserGraduate className="text-indigo-500 text-xl" />,
-  experience: <FaCalendarCheck className="text-indigo-500 text-xl" />,
-  careergoal: <FaBullseye className="text-indigo-500 text-xl" />,
-  timeconstraint: <FaClock className="text-indigo-500 text-xl" />,
-  availabilty: <FaGlobe className="text-indigo-500 text-xl" />
+  interest: <FaLightbulb className="text-amber-400 text-xl" />,
+  skills: <FaLaptopCode className="text-blue-400 text-xl" />,
+  education: <FaUserGraduate className="text-emerald-400 text-xl" />,
+  experience: <FaCalendarCheck className="text-purple-400 text-xl" />,
+  careergoal: <FaBullseye className="text-rose-400 text-xl" />,
+  timeconstraint: <FaClock className="text-indigo-400 text-xl" />,
+  availabilty: <FaGlobe className="text-cyan-400 text-xl" />
 };
 
 const CareerStatus = ({ refreshStatus }) => {
@@ -44,6 +53,7 @@ const CareerStatus = ({ refreshStatus }) => {
   const [generating, setGenerating] = useState(false);
   const [generatedAt, setGeneratedAt] = useState(null);
   const [planInfo, setPlanInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchPlanInfo = async () => {
     try {
@@ -64,10 +74,28 @@ const CareerStatus = ({ refreshStatus }) => {
     try {
       setGenerating(true);
       const res = await generateCareerPlan();
-      toast.success('Career Plan generated successfully!');
+      toast.success('Career Plan generated successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       navigate('/career/plan', { state: { plan: res.plan } });
     } catch (err) {
-      toast.error('Failed to generate career plan');
+      toast.error('Failed to generate career plan', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     } finally {
       setGenerating(false);
     }
@@ -75,6 +103,7 @@ const CareerStatus = ({ refreshStatus }) => {
 
   const fetchStatus = async () => {
     try {
+      setIsLoading(true);
       const res = await getCareerStatus();
       setStatus(res.status);
       if (res.status === 'chosen') {
@@ -82,22 +111,51 @@ const CareerStatus = ({ refreshStatus }) => {
         setFormData(res.choice);
         if (res.user) setUserName(res.user);
       }
+      setIsLoading(false);
     } catch (err) {
       setErrorMsg(`Error ${err?.response?.status || 500}: Unable to fetch your career path.`);
-      toast.error('Failed to fetch career status');
+      toast.error('Failed to fetch career status', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
+      setIsLoading(false);
     }
   };
 
   const handleReset = async () => {
     try {
       await deleteCareerChoice();
-      toast.success('Career choice reset successfully');
+      toast.success('Career choice reset successfully', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       setStatus('not_chosen');
       setChoice(null);
       setEditMode(false);
       refreshStatus();
     } catch {
-      toast.error('Reset failed');
+      toast.error('Reset failed', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     }
   };
 
@@ -108,11 +166,29 @@ const CareerStatus = ({ refreshStatus }) => {
   const handleUpdate = async () => {
     try {
       const res = await updateCareerChoice(formData);
-      toast.success('Career choice updated!');
+      toast.success('Career choice updated!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
       setChoice(res.choice);
       setEditMode(false);
     } catch {
-      toast.error('Update failed');
+      toast.error('Update failed', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored",
+      });
     }
   };
 
@@ -121,62 +197,267 @@ const CareerStatus = ({ refreshStatus }) => {
     fetchPlanInfo();
   }, []);
 
-  return (
-    <div className="p-8 sm:p-10 bg-white rounded-3xl max-w-5xl mx-auto mt-24 transition-all duration-300 border border-slate-200">
-      <ToastContainer />
-      <h2 className="text-4xl font-bold mb-2 text-slate-900 tracking-tight">🎯 Career Path Status</h2>
-      {userName && <p className="text-slate-600 text-md mb-6">👤 Selected by <span className="font-semibold text-indigo-600">{userName}</span></p>}
-      {errorMsg && <div className="bg-red-100 text-red-700 border border-red-200 p-4 rounded-xl mb-6">{errorMsg}</div>}
-      {status === 'not_chosen' && !errorMsg && <div className="text-slate-600">You haven't selected a career path yet.</div>}
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+return (
+  <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
 
-      {status === 'chosen' && choice && (
-        <div className="bg-slate-50 p-6 rounded-2xl shadow-md border border-slate-200 space-y-6">
-          {editMode ? (
-            <EditCareer formData={formData} onChange={handleChange} />
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-6">
-              {Object.entries(choice).map(([key, value]) => {
-                if (['_id', 'userId', '__v'].includes(key)) return null;
-                const label = key.charAt(0).toUpperCase() + key.slice(1);
-                return (
-                  <div key={key} className="flex items-start gap-4 p-4 bg-white border border-indigo-100 rounded-xl shadow-sm">
-                    <div className="mt-1">{iconMap[key]}</div>
-                    <div>
-                      <p className="text-sm text-slate-500 font-medium">{label}</p>
-                      <p className="text-slate-900 font-semibold text-lg">{value}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-3 mt-6">
-            {editMode ? (
-              <>
-                <button onClick={handleUpdate} className="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">Save</button>
-                <button onClick={() => { setEditMode(false); setFormData(choice); }} className="px-4 py-2 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600">Cancel</button>
-              </>
-            ) : (
-              <button onClick={() => setEditMode(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Edit</button>
-            )}
-
-            <ResetCareer onReset={handleReset} />
-
-            <button onClick={handleGeneratePlan} className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700" disabled={generating}>
-              {generating ? 'Generating...' : '🚀 Generate AI Career Plan'}
-            </button>
-
-            <button onClick={() => navigate('/career/plan')} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">
-              📊 View Full Career Plan
-            </button>
-          </div>
-
-          {generatedAt && <p className="mt-4 text-sm text-slate-500 italic">🕒 Last Plan Generated: {generatedAt.toLocaleString()}</p>}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-6xl mx-auto"
+      >
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl lg:text-6xl">
+            Career Path Status
+          </h1>
+          <p className="mt-5 max-w-xl mx-auto text-xl text-gray-500">
+            {status === "not_chosen"
+              ? "Your career journey starts here"
+              : "Your personalized career roadmap"}
+          </p>
         </div>
-      )}
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <FiLoader className="animate-spin text-4xl text-blue-600" />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={status}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200"
+            >
+              <div className="p-8 sm:p-10">
+                {errorMsg && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded"
+                  >
+                    <div className="flex items-center">
+                      <svg
+                        className="h-5 w-5 text-red-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <p className="ml-3 text-sm text-red-700">{errorMsg}</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {userName && (
+                  <div className="flex items-center mb-6">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      <FiUser className="mr-1 w-4 h-4" />
+                      Selected by {userName}
+                    </span>
+                  </div>
+                )}
+
+                {status === "not_chosen" && !errorMsg && (
+                  <motion.div
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="text-center py-12"
+                  >
+                    <div className="mx-auto h-24 w-24 text-gray-300">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">
+                      No career path selected
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Get started by selecting your career preferences.
+                    </p>
+                    <div className="mt-6">
+                      <button
+                        onClick={() => navigate("/career")}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Choose Career Path <FiChevronRight className="ml-2 -mr-1 w-5 h-5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+
+                {status === "chosen" && choice && (
+                  <motion.div
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="space-y-8"
+                  >
+                    {editMode ? (
+                      <EditCareer formData={formData} onChange={handleChange} />
+                    ) : (
+                      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {Object.entries(choice).map(([key, value]) => {
+                          if (["_id", "userId", "__v"].includes(key)) return null;
+                          const label = key
+                            .replace(/([A-Z])/g, " $1")
+                            .replace(/^./, (str) => str.toUpperCase());
+                          return (
+                            <motion.div
+                              key={key}
+                              whileHover={{ y: -3, shadow: "0 10px 15px rgba(0,0,0,0.05)" }}
+                              className="flex flex-col p-6 bg-white rounded-xl shadow-sm border border-gray-200"
+                            >
+                              <div className="flex items-center mb-4">
+                                <div className="p-2 rounded-lg bg-blue-50">
+                                  {iconMap[key] || <FiUser className="w-6 h-6 text-blue-400" />}
+                                </div>
+                                <h3 className="ml-3 text-sm font-medium text-gray-500">{label}</h3>
+                              </div>
+                              <p className="text-lg font-semibold text-gray-900 truncate">{value}</p>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+                      {editMode ? (
+                        <>
+                          <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleUpdate}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          >
+                            Save Changes
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                              setEditMode(false);
+                              setFormData(choice);
+                            }}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            Cancel
+                          </motion.button>
+                        </>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setEditMode(true)}
+                          className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          Edit Preferences
+                        </motion.button>
+                      )}
+
+                      <ResetCareer onReset={handleReset} />
+
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleGeneratePlan}
+                        disabled={generating}
+                        className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          generating
+                            ? "bg-purple-400"
+                            : "bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
+                        }`}
+                      >
+                        {generating ? (
+                          <>
+                            <FiLoader className="animate-spin mr-2" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <FaRocket className="mr-2" />
+                            Generate AI Career Plan
+                          </>
+                        )}
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate("/career/plan")}
+                        className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+                      >
+                        <FaChartLine className="mr-2" />
+                        View Full Career Plan
+                      </motion.button>
+                    </div>
+
+                    {generatedAt && (
+                      <div className="text-sm text-gray-500 flex items-center mt-4">
+                        <svg
+                          className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Last Plan Generated: {generatedAt.toLocaleString()}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </motion.div>
     </div>
-  );
+  </div>
+);
+
+
+
+
 };
 
 export default CareerStatus;
