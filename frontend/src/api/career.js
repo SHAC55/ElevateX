@@ -12,10 +12,82 @@ export const getCareerStatus = async () => {
   const res = await api.get('/career/status');
   return res.data;
 };
+const normalizeDifficulty = d => {
+  const key = String(d || "").toLowerCase();
+  if (key === "foundational" || key === "foundation") return "foundation";
+  if (key === "intermediate") return "intermediate";
+  if (key === "advanced") return "advanced";
+  if (key === "soft" || key === "soft_skills" || key === "soft skills") return "soft_skills";
+  return "foundation";
+};
+
+/**
+ * Fetches user skills (with merged progress) from /api/learning/skills
+ * and reshapes into a dashboard-friendly payload.
+ *
+ * Returns:
+ * {
+ *   completedSkills: number,
+ *   inProgressSkills: number,
+ *   skills: { foundation:[], intermediate:[], advanced:[], soft_skills:[] },
+ *   // compatibility fields for your existing HomePage:
+ *   projects: [],
+ *   miniProjects: 0,
+ *   resumeScore: 0,
+ *   goal: null,
+ *   raw: [...] // original items for debugging if needed
+ * }
+ */
+export const getDetailedJourneyDashboard = async () => {
+  
+  const res = await api.get("learning/skills", { params: { sort: "-updatedAt" } });
+  console.log(res.data.items);
+  
+  const items = Array.isArray(res.data?.items) ? res.data.items
+               : Array.isArray(res.data) ? res.data
+               : [];
+
+  // only in_progress or completed
+  const relevant = items.filter(s =>
+    ["in_progress", "completed"].includes(String(s?.status || "").toLowerCase())
+  );
+
+  const completedSkills = relevant.filter(s => String(s.status).toLowerCase() === "completed").length;
+  const inProgressSkills = relevant.filter(s => String(s.status).toLowerCase() === "in_progress").length;
+
+  const grouped = relevant.reduce(
+    (acc, s) => {
+      const bucket = normalizeDifficulty(s.difficulty);
+      acc[bucket].push(s);
+      return acc;
+    },
+    { foundation: [], intermediate: [], advanced: [], soft_skills: [] }
+  );
+  //console.log(grouped);
+  
+
+  return {
+    completedSkills,
+    inProgressSkills,
+    skills: {
+      foundation: grouped.foundation,
+      intermediate: grouped.intermediate,
+      advanced: grouped.advanced,
+      soft_skills: grouped.soft_skills,
+    },
+    // keep these for existing UI bits; swap to real sources later if you have them
+    projects: [],
+    miniProjects: 0,
+    resumeScore: 0,
+    goal: null,
+    raw: items,
+  };
+};
+
 
 // ✅ Delete career choice
 export const deleteCareerChoice = async () => {
-  const res = await api.delete('/career/choice');
+  const res = await api.delete('/career/reset');
   return res.data;
 };
 
