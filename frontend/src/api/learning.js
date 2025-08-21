@@ -101,12 +101,26 @@ export const deleteSkill = async (skillId) => {
   return res.data;
 };
 
-// Progress (upsert absolute %)
-export const upsertSkillProgress = async ({ userId, skillId, progress }) => {
-  const res = await api.post(`/learning/skills/progress`, { userId, skillId, progress });
+export const upsertSkillProgress = async ({ skillId, progress, status }) => {
+  const res = await api.post(`/learning/skills/progress`, {
+    skillId,
+    progress,
+    status,
+  });
+  console.log(res.data);
   return res.data;
 };
 
+// NEW: topic progress/status upsert
+export const upsertTopicProgress = async ({ topicId, progress, status }) => {
+  const res = await api.post(`/learning/topics/progress`, {
+    topicId,
+    progress,
+    status,
+  });
+  console.log("TopicProgress:", res.data);
+  return res.data;
+};
 // Mark completed (if you add this endpoint later)
 export const completeSkill = async ({ userId, skillId }) => {
   const res = await api.patch(`/learning/skills/complete`, { userId, skillId });
@@ -188,3 +202,4 @@ export const generateTestQuestionsAI = async (testId) => {
   const res = await api.get(`/learning/tests/${testId}/generate-questions`);
   return res.data;
 };
+

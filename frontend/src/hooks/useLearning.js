@@ -1,8 +1,9 @@
 // src/hooks/useLearning.js
+//gaand maar dis bhenchod dimaag ka ye file .
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as learning from "../api/learning";
 
-// small helper to produce a stable key from params
 const keyWithParams = (base, params = {}) => [base, params];
 
 export const queryKeys = {
@@ -17,7 +18,6 @@ export const queryKeys = {
   test: (id) => ["learning:test", id],
 };
 
-/* --------------------------------- MODULES --------------------------------- */
 
 export function useModules(params = {}, options = {}) {
   return useQuery({
@@ -63,7 +63,7 @@ export function useDeleteModule() {
   });
 }
 
-// AI: module learning path (on-demand; you can call with enabled flag)
+
 export function useModulePathAI(moduleId, options = {}) {
   return useQuery({
     queryKey: ["learning:module:path", moduleId],
@@ -73,7 +73,7 @@ export function useModulePathAI(moduleId, options = {}) {
   });
 }
 
-/* ---------------------------------- SKILLS --------------------------------- */
+
 
 export function useSkills(params = {}, options = {}) {
   return useQuery({
@@ -190,6 +190,8 @@ export function useTopic(topicId, options = {}) {
     ...options,
   });
 }
+
+
 
 export function useCreateTopic() {
   const qc = useQueryClient();
@@ -354,3 +356,124 @@ export function useGenerateTopicsForSkill(skillId) {
     },
   });
 }
+
+
+
+// ✅ Skill status/progress upsert (start/done/reset)
+// src/hooks/useLearning.js
+// src/hooks/useLearning.js
+
+
+export function useUpsertSkillStatus() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ skillId, status, progress }) =>
+      learning.upsertSkillProgress({ skillId, status, progress }),
+
+    // Optimistic update across ALL skills queries + the single-skill query
+    onMutate: async ({ skillId, status, progress }) => {
+      // 1) cancel any outgoing refetches
+      await Promise.all([
+        qc.cancelQueries({ queryKey: [queryKeys.skills] }),             // all skills lists
+        qc.cancelQueries({ queryKey: queryKeys.skill(skillId) }),       // single skill
+      ]);
+
+      // 2) snapshot previous data
+      const prevSingle = qc.getQueryData(queryKeys.skill(skillId));
+      const prevLists = qc.getQueriesData({ queryKey: [queryKeys.skills] });
+      // prevLists is an array of [queryKey, data] for each matching query
+
+      // helper: compute next progress
+      const computeProgress = (curr) =>
+        typeof progress === "number"
+          ? progress
+          : status === "completed"
+          ? 100
+          : status === "not_started"
+          ? 0
+          : typeof curr === "number"
+          ? curr
+          : 0;
+
+      // 3) patch single-skill cache
+      if (prevSingle) {
+        qc.setQueryData(queryKeys.skill(skillId), {
+          ...prevSingle,
+          status: status ?? prevSingle.status,
+          progress: computeProgress(prevSingle.progress),
+        });
+      }
+
+      // 4) patch every skills list (supports either plain array OR { items })
+      for (const [key, data] of prevLists) {
+        if (!data) continue;
+
+        const patchArray = (arr) =>
+          Array.isArray(arr)
+            ? arr.map((s) =>
+                String(s?._id) === String(skillId)
+                  ? { ...s, status: status ?? s.status, progress: computeProgress(s.progress) }
+                  : s
+              )
+            : arr;
+
+        let nextData = data;
+        if (Array.isArray(data)) {
+          nextData = patchArray(data);
+        } else if (data && Array.isArray(data.items)) {
+          nextData = { ...data, items: patchArray(data.items) };
+        }
+
+        qc.setQueryData(key, nextData);
+      }
+
+      // pass snapshots to onError
+      return { prevSingle, prevLists };
+    },
+
+    onError: (_err, { skillId }, ctx) => {
+      // restore snapshots
+      if (ctx?.prevSingle) qc.setQueryData(queryKeys.skill(skillId), ctx.prevSingle);
+      if (ctx?.prevLists) {
+        for (const [key, data] of ctx.prevLists) {
+          qc.setQueryData(key, data);
+        }
+      }
+    },
+
+    onSettled: (_data, _err, { skillId }) => {
+      // refetch to be certain
+      qc.invalidateQueries({ queryKey: queryKeys.skill(skillId) });
+      qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+      qc.invalidateQueries({ queryKey: [queryKeys.topics, { skillId }] });
+    },
+  });
+}
+
+
+
+// ✅ Topic status/progress upsert (start/done/reset)
+// Accept optional skillId so we can target the right topics bucket
+export function useUpsertTopicStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    // Implement learning.upsertTopicProgress to hit /api/learning/topics/upsert-progress
+    mutationFn: ({ topicId, status, progress, skillId }) =>
+      learning.upsertTopicProgress({ topicId, status, progress }),
+    onSuccess: (_data, { topicId, skillId }) => {
+      // refresh the single topic
+      qc.invalidateQueries({ queryKey: queryKeys.topic(topicId) });
+      // refresh the scoped topics list if we know the skill, otherwise the broad one
+      if (skillId) {
+        qc.invalidateQueries({ queryKey: queryKeys.topicsBySkill(skillId) });
+      } else {
+        qc.invalidateQueries({ queryKey: [queryKeys.topics] });
+      }
+      // optional: refresh skills to update any aggregate progress/status pills
+      qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+    },
+  });
+}
+
+

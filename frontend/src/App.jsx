@@ -277,7 +277,7 @@ const SidebarLayout = ({ children }) => (
 const CareerLayout = () => (
   <div className="flex flex-col min-h-screen">
     <LearningNavbar />
-    <main className="flex-1 pt-20 px-4">
+    <main className="flex-1 pt-0 px-4">
       {/* Nested route content renders here */}
       <Routes>
         <Route index element={<CareerPlanPage />} />
