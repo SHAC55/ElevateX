@@ -83,7 +83,11 @@ export const getSkills = async (params = {}) => {
 
 // Skill detail
 export const getSkillById = async (skillId) => {
+  console.log("requesting ");
+  
   const res = await api.get(`/learning/skills/${skillId}`);
+  console.log(res.data);
+  
   return res.data;
 };
 
