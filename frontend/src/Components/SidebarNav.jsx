@@ -1,4 +1,3 @@
-
 // src/components/TopNavbar.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { NavLink } from "react-router-dom";
@@ -19,8 +18,12 @@ import NotificationModal from "./NotificationModal";
 import NotificationToastWrapper from "./Profile/NotificationToastWrapper";
 import { useNotificationSocket } from "../hooks/useNotificationSocket";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../context/AuthContext";
 
 const TopNavbar = ({ notificationsFromDB = [] }) => {
+  // ✅ fixed useAuth usage
+  const { logout } = useAuth();
+
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -55,7 +58,8 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
   }, []);
 
   const profileImage =
-    profile?.profilePicture?.trim() || "https://cdn-icons-png.flaticon.com/128/2202/2202112.png";
+    profile?.profilePicture?.trim() ||
+    "https://cdn-icons-png.flaticon.com/128/2202/2202112.png";
 
   const navItems = [
     { to: "/home", label: "Dashboard", icon: <FaHome /> },
@@ -116,24 +120,24 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
               <FaBell className="w-6 h-6" />
 
               {/* Bouncing notification count */}
-           <AnimatePresence>
-  {notificationsCount > 0 && (
-    <motion.span
-      key={notificationsCount}
-      initial={{ scale: 0 }}
-      animate={{ scale: 1.3 }} // just one bounce up
-      exit={{ scale: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 15,
-      }}
-      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full"
-    >
-      {notificationsCount}
-    </motion.span>
-  )}
-</AnimatePresence>
+              <AnimatePresence>
+                {notificationsCount > 0 && (
+                  <motion.span
+                    key={notificationsCount}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1.3 }}
+                    exit={{ scale: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 15,
+                    }}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full"
+                  >
+                    {notificationsCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
 
             {profile && user && (
@@ -156,6 +160,14 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
                 </div>
               </div>
             )}
+
+            {/* 🚀 Logout Button */}
+            <button
+              onClick={logout}
+              className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600"
+            >
+              Logout
+            </button>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -164,7 +176,11 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
             onClick={toggleMenu}
             aria-label="Toggle Menu"
           >
-            {isOpen ? <FaTimes className="w-6 h-6" /> : <FaBars className="w-6 h-6" />}
+            {isOpen ? (
+              <FaTimes className="w-6 h-6" />
+            ) : (
+              <FaBars className="w-6 h-6" />
+            )}
           </button>
         </div>
 
@@ -180,7 +196,9 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
                     onClick={() => setIsOpen(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-2 text-sm ${
-                        isActive ? "text-black font-semibold" : "text-gray-600 hover:text-black"
+                        isActive
+                          ? "text-black font-semibold"
+                          : "text-gray-600 hover:text-black"
                       }`
                     }
                   >
@@ -199,6 +217,17 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
                   </button>
                 )
               )}
+
+              {/* 🚀 Logout Button (Mobile) */}
+              <button
+                onClick={() => {
+                  logout();
+                  setIsOpen(false);
+                }}
+                className="flex items-center gap-2 text-sm text-red-500 hover:text-red-600"
+              >
+                Logout
+              </button>
             </nav>
           </div>
         )}

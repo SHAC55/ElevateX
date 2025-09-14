@@ -10,6 +10,7 @@ import { SocketProvider } from './context/SocketContext';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { MarketplaceProvider } from './context/MarketContext.jsx';
 
 
 const queryClient = new QueryClient({
@@ -30,11 +31,13 @@ createRoot(document.getElementById('root')).render(
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
         <SocketProvider>
+          <MarketplaceProvider>
           <CustomToastProvider>
             <App />
             {/* Optional Devtools (open with small button in corner) */}
             <ReactQueryDevtools initialIsOpen={false} />
           </CustomToastProvider>
+          </MarketplaceProvider>
         </SocketProvider>
       </QueryClientProvider>
     </AuthProvider>
