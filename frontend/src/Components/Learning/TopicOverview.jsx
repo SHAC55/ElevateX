@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card } from "../ui/Card";
 import { Button } from "../ui/Button";
@@ -79,12 +80,14 @@ export default function TopicOverview({
           );
 
         return (
-          <li key={tid}>
+          <li key={tid} id={`topic-${tid}`} className="scroll-mt-28">
             <Card variant="outlined" padding="normal" className="hover:shadow-md transition-all">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <span className="font-medium text-gray-900 truncate">{t.title}</span>
+                    <span className="font-medium text-gray-900 truncate">
+                      {t.title || t.name}
+                    </span>
                     <Tag variant={difficultyBadgeVariant(t.difficulty)} size="sm">
                       {t.difficulty}
                     </Tag>
@@ -134,6 +137,8 @@ export default function TopicOverview({
                         setExpandedTopic(isOpen ? null : tid);
                       }}
                       className="text-xs text-gray-600 hover:text-gray-900 transition-colors"
+                      aria-expanded={isOpen}
+                      aria-controls={`topic-${tid}`}
                     >
                       {isOpen ? "Less" : "More"}
                     </button>

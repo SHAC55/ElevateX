@@ -136,6 +136,10 @@ export const getSkillAIContent = async (skillId) => {
   const res = await api.get(`/learning/skills/${skillId}/content`);
   return res.data;
 };
+export const regetSkillAIContent = async (skillId) => {
+  const res = await api.get(`/learning/skills/${skillId}/content/regen`);
+  return res.data;
+};
 
 /* ------------------------------------ TOPICS ----------------------------------- */
 

@@ -1,74 +1,88 @@
+
+
 // SkillContent.jsx
 import React from "react";
-import { Card } from "../ui/Card";
-import { Button } from "../ui/Button";
+import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSyncAlt, faExclamationTriangle, faBookOpen } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faSyncAlt, 
+  faExclamationTriangle, 
+  faBookOpen,
+  faCircleNotch
+} from '@fortawesome/free-solid-svg-icons';
 import PremiumContentRenderer from "./PremiumContentRenderer";
 
 export default function SkillContent({ loadingAI, aiError, aiMaterial, onRetry }) {
   if (loadingAI) {
     return (
-      <Card variant="elevated" className="border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden">
-        {/* skeleton, unchanged */}
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="h-6 w-40 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-            <div className="w-5 h-5 rounded-full border-2 border-blue-400 border-t-blue-600 animate-spin"></div>
-          </div>
-          <div className="space-y-3">
-            <div className="h-4 w-full bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-            <div className="h-4 w-5/6 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-            <div className="h-4 w-4/5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-            <div className="h-4 w-full bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-            <div className="h-4 w-3/4 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full animate-pulse"></div>
-          </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="rounded-2xl bg-gradient-to-br from-indigo-50/80 to-blue-50/80 border border-indigo-100 p-8 shadow-sm"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-7 w-48 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+          <div className="w-6 h-6 rounded-full border-2 border-indigo-400 border-t-indigo-600 animate-spin"></div>
         </div>
-      </Card>
+        <div className="space-y-4">
+          <div className="h-4 w-full bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+          <div className="h-4 w-5/6 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+          <div className="h-4 w-4/5 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+          <div className="h-4 w-full bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+          <div className="h-4 w-3/4 bg-gradient-to-r from-indigo-100 to-blue-100 rounded-full animate-pulse"></div>
+        </div>
+      </motion.div>
     );
   }
 
   if (aiError) {
     return (
-      <Card variant="elevated" className="border-0 bg-gradient-to-br from-rose-50/80 to-rose-100/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center text-rose-700">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="h-5 w-5 mr-2" />
-              <span className="font-medium">Content Unavailable</span>
-            </div>
-            {onRetry && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRetry}
-                className="rounded-full border-rose-300 text-rose-700 hover:bg-rose-50 transition-all duration-200"
-              >
-                <FontAwesomeIcon icon={faSyncAlt} className="h-3 w-3 mr-1" />
-                Retry
-              </Button>
-            )}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="rounded-2xl bg-gradient-to-br from-rose-50/80 to-rose-100/80 border border-rose-200 p-6 shadow-sm"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center text-rose-700">
+            <FontAwesomeIcon icon={faExclamationTriangle} className="h-5 w-5 mr-2" />
+            <span className="font-medium">Content Unavailable</span>
           </div>
-          <div className="text-rose-800">
-            <p className="text-rose-700/90 text-sm">
-              {aiError?.response?.data?.message || aiError.message || "An unexpected error occurred while generating content"}
-            </p>
-          </div>
+          {onRetry && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onRetry}
+              className="px-3 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-100 text-sm transition-colors flex items-center"
+            >
+              <FontAwesomeIcon icon={faSyncAlt} className="h-3 w-3 mr-1" />
+              Retry
+            </motion.button>
+          )}
         </div>
-      </Card>
+        <div className="text-rose-800">
+          <p className="text-rose-700/90 text-sm">
+            {aiError?.response?.data?.message || aiError.message || "An unexpected error occurred while generating content"}
+          </p>
+        </div>
+      </motion.div>
     );
   }
 
   if (!aiMaterial) {
     return (
-      <Card variant="elevated" className="border-0 bg-gradient-to-br from-gray-50 to-gray-100/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden">
-        <div className="p-6 text-center">
-          <FontAwesomeIcon icon={faBookOpen} className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">
-            Select a skill to view detailed learning content.
-          </p>
-        </div>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/80 border border-slate-200 p-8 text-center shadow-sm"
+      >
+        <FontAwesomeIcon icon={faBookOpen} className="h-12 w-12 mx-auto text-slate-400 mb-4" />
+        <p className="text-slate-600">
+          Select a skill to view detailed learning content.
+        </p>
+      </motion.div>
     );
   }
 
@@ -78,10 +92,13 @@ export default function SkillContent({ loadingAI, aiError, aiMaterial, onRetry }
   const text = material?.text || "";
 
   return (
-    <Card variant="elevated" className="border-0 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-      <div className="p-8">
-        <PremiumContentRenderer json={json} fallbackText={text} />
-      </div>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="rounded-2xl bg-gradient-to-br from-indigo-50/80 to-blue-50/80 border border-indigo-100 p-8 shadow-sm"
+    >
+      <PremiumContentRenderer json={json} fallbackText={text} />
+    </motion.div>
   );
 }

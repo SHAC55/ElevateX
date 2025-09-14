@@ -1,19 +1,22 @@
+
+
 // PremiumContentRenderer.jsx
 import React, { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSyncAlt, 
-  faExclamationTriangle,
+  faChevronDown,
+  faChevronUp,
   faCode,
   faBookOpen,
   faStar,
   faGraduationCap,
-  faLightbulb
+  faLightbulb,
+  faExclamationTriangle,
+  faCheckCircle
 } from '@fortawesome/free-solid-svg-icons';
 
-const toStringArray = (x) => Array.isArray(x) ? x : String(x || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-
-function parseMarkdownToStructured(md) {
+const parseMarkdownToStructured = (md) => {
   if (!md || typeof md !== "string") return null;
 
   // Try to extract a JSON block if someone "helpfully" included it anyway
@@ -91,7 +94,89 @@ function parseMarkdownToStructured(md) {
     tasks,
     pitfalls
   };
-}
+};
+
+const SectionHeader = ({ icon, color, title, expanded, onToggle }) => (
+  <motion.button
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    onClick={onToggle}
+    className="flex items-center justify-between w-full p-4 rounded-xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
+  >
+    <div className="flex items-center">
+      <div className={`h-10 w-10 rounded-lg ${color} flex items-center justify-center mr-3`}>
+        <FontAwesomeIcon icon={icon} className="h-5 w-5 text-white" />
+      </div>
+      <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+    </div>
+    <FontAwesomeIcon 
+      icon={expanded ? faChevronUp : faChevronDown} 
+      className="h-4 w-4 text-slate-500" 
+    />
+  </motion.button>
+);
+
+const ConceptCard = ({ term, definition, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200"
+  >
+    <h3 className="font-semibold text-slate-800 mb-2">{term}</h3>
+    <p className="text-slate-600 text-sm">{definition}</p>
+  </motion.div>
+);
+
+const StepCard = ({ step, index }) => (
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className="flex items-start"
+  >
+    <div className="flex-shrink-0 mr-4 mt-1">
+      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm">
+        {index + 1}
+      </div>
+    </div>
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex-1 hover:shadow-md transition-all duration-200">
+      <p className="text-slate-700">{step}</p>
+    </div>
+  </motion.div>
+);
+
+const TaskCard = ({ task, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200"
+  >
+    <div className="flex items-start">
+      <div className="flex-shrink-0 mr-3 mt-1">
+        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+      </div>
+      <p className="text-slate-700">{task}</p>
+    </div>
+  </motion.div>
+);
+
+const PitfallCard = ({ pitfall, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: index * 0.05 }}
+    className="bg-amber-50 rounded-xl p-5 border border-amber-200 hover:shadow-sm transition-all duration-200"
+  >
+    <div className="flex items-start">
+      <div className="flex-shrink-0 mr-3 mt-0.5">
+        <FontAwesomeIcon icon={faExclamationTriangle} className="h-4 w-4 text-amber-600" />
+      </div>
+      <p className="text-amber-800">{pitfall}</p>
+    </div>
+  </motion.div>
+);
 
 export default function PremiumContentRenderer({ json, fallbackText }) {
   const [expandedSections, setExpandedSections] = useState({
@@ -125,156 +210,178 @@ export default function PremiumContentRenderer({ json, fallbackText }) {
     <div className="premium-content">
       {/* Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">
+        <motion.h1 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-3xl font-bold text-slate-900 mb-3"
+        >
           {data.title}
-        </h1>
+        </motion.h1>
         {data.difficulty ? (
-          <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-700 shadow-sm"
+          >
             <FontAwesomeIcon icon={faStar} className="h-4 w-4 mr-2" />
             {data.difficulty}
-          </div>
+          </motion.div>
         ) : null}
       </div>
 
       {/* What & Why */}
       {data.whatWhy ? (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-            <FontAwesomeIcon icon={faLightbulb} className="h-5 w-5 mr-2 text-yellow-500" />
-            What & Why
-          </h2>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <p className="text-gray-700 leading-relaxed">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="flex items-center mb-4">
+            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center mr-3">
+              <FontAwesomeIcon icon={faLightbulb} className="h-5 w-5 text-amber-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-800">What & Why</h2>
+          </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <p className="text-slate-700 leading-relaxed">
               {data.whatWhy}
             </p>
           </div>
-        </div>
+        </motion.div>
       ) : null}
 
       {/* Key Concepts */}
       {data.concepts?.length ? (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FontAwesomeIcon icon={faBookOpen} className="h-5 w-5 mr-2 text-blue-500" />
-              Key Concepts
-            </h2>
-            <button 
-              onClick={() => toggleSection('concepts')}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              {expandedSections.concepts ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          {expandedSections.concepts ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {data.concepts.map((c, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                  <h3 className="font-semibold text-gray-900 mb-2">{c.term}</h3>
-                  <p className="text-gray-700 text-sm">{c.definition}</p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8"
+        >
+          <SectionHeader
+            icon={faBookOpen}
+            color="bg-blue-500"
+            title="Key Concepts"
+            expanded={expandedSections.concepts}
+            onToggle={() => toggleSection('concepts')}
+          />
+          <AnimatePresence>
+            {expandedSections.concepts && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                {data.concepts.map((c, i) => (
+                  <ConceptCard key={i} term={c.term} definition={c.definition} index={i} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       ) : null}
 
       {/* Learning Path */}
       {data.steps?.length ? (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FontAwesomeIcon icon={faGraduationCap} className="h-5 w-5 mr-2 text-green-500" />
-              Learning Path
-            </h2>
-            <button 
-              onClick={() => toggleSection('steps')}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              {expandedSections.steps ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          {expandedSections.steps ? (
-            <div className="space-y-4">
-              {data.steps.map((step, index) => (
-                <div key={index} className="flex">
-                  <div className="flex-shrink-0 mr-4">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold">
-                      {index + 1}
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex-1 hover:shadow-md transition-shadow">
-                    <p className="text-gray-700">{step}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-8"
+        >
+          <SectionHeader
+            icon={faGraduationCap}
+            color="bg-green-500"
+            title="Learning Path"
+            expanded={expandedSections.steps}
+            onToggle={() => toggleSection('steps')}
+          />
+          <AnimatePresence>
+            {expandedSections.steps && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 space-y-4"
+              >
+                {data.steps.map((step, index) => (
+                  <StepCard key={index} step={step} index={index} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       ) : null}
 
       {/* Practice Tasks */}
       {data.tasks?.length ? (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FontAwesomeIcon icon={faCode} className="h-5 w-5 mr-2 text-purple-500" />
-              Practice Tasks
-            </h2>
-            <button 
-              onClick={() => toggleSection('tasks')}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              {expandedSections.tasks ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          {expandedSections.tasks ? (
-            <div className="space-y-4">
-              {data.tasks.map((task, index) => (
-                <div key={index} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                  <div className="flex">
-                    <div className="flex-shrink-0 mr-3 mt-1">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                    </div>
-                    <p className="text-gray-700">{task}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-8"
+        >
+          <SectionHeader
+            icon={faCode}
+            color="bg-purple-500"
+            title="Practice Tasks"
+            expanded={expandedSections.tasks}
+            onToggle={() => toggleSection('tasks')}
+          />
+          <AnimatePresence>
+            {expandedSections.tasks && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 space-y-4"
+              >
+                {data.tasks.map((task, index) => (
+                  <TaskCard key={index} task={task} index={index} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       ) : null}
 
       {/* Common Pitfalls */}
       {data.pitfalls?.length ? (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="h-5 w-5 mr-2 text-amber-500" />
-              Common Pitfalls
-            </h2>
-            <button 
-              onClick={() => toggleSection('pitfalls')}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
-            >
-              {expandedSections.pitfalls ? 'Collapse' : 'Expand'}
-            </button>
-          </div>
-          {expandedSections.pitfalls ? (
-            <div className="space-y-4">
-              {data.pitfalls.map((pitfall, index) => (
-                <div key={index} className="bg-amber-50 rounded-2xl p-5 border border-amber-200 hover:shadow-sm transition-shadow">
-                  <div className="flex">
-                    <div className="flex-shrink-0 mr-3 mt-1">
-                      <FontAwesomeIcon icon={faExclamationTriangle} className="h-4 w-4 text-amber-600" />
-                    </div>
-                    <p className="text-amber-800">{pitfall}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mb-8"
+        >
+          <SectionHeader
+            icon={faExclamationTriangle}
+            color="bg-amber-500"
+            title="Common Pitfalls"
+            expanded={expandedSections.pitfalls}
+            onToggle={() => toggleSection('pitfalls')}
+          />
+          <AnimatePresence>
+            {expandedSections.pitfalls && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 space-y-4"
+              >
+                {data.pitfalls.map((pitfall, index) => (
+                  <PitfallCard key={index} pitfall={pitfall} index={index} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       ) : null}
     </div>
   );
