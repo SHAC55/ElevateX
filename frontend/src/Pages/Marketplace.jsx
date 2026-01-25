@@ -7,16 +7,7 @@ import AllMarketProduct from '../Components/AllMarketProduct'
 
 const Marketplace = () => {
   return (
-    <div>
-      
-      <div className='flex gap-3'>
-        <AddProductButton/>
-        <ListedProductButton/>
-        <SelledProductButton/>
-      </div>
-
-   
-
+    <div  className='mt-20'>
       <AllMarketProduct/>
     </div>
   )
