@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { MarketplaceContext } from "../context/MarketContext";
 import { toast } from "react-hot-toast";
-import MarketPlaceHeader from "./MarketPlaceHeader";
+import MarketPlaceHeader from "./MarketPlaceheader";
 import { useNavigate } from "react-router-dom";
 
 const AllMarketProduct = () => {
@@ -41,7 +41,7 @@ const AllMarketProduct = () => {
     (p) =>
       p.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.location.toLowerCase().includes(searchQuery.toLowerCase())
+      p.location.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) return <p className="text-center mt-10">Loading products...</p>;
@@ -58,7 +58,7 @@ const AllMarketProduct = () => {
           {filteredProducts.map((product) => (
             <div
               key={product._id}
-              onClick={() =>navigate(`/marketplace/product/${product._id}`)}
+              onClick={() => navigate(`/marketplace/product/${product._id}`)}
               className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-xl transition"
             >
               <img
