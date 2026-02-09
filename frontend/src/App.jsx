@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Landingpage from "./Pages/Landingpage";
@@ -41,7 +40,6 @@ import ProductDesc from "./Pages/ProductDesc";
 // --------------------- Layouts ---------------------
 const SidebarLayout = ({ children }) => (
   <div className="flex min-h-screen">
-     
     <SidebarNav />
     <main className="flex-1 p-4">{children}</main>
   </div>
@@ -50,195 +48,199 @@ const SidebarLayout = ({ children }) => (
 const CareerLayout = ({ children }) => (
   <div className="flex flex-col min-h-screen">
     <LearningNavbar />
-    <main className="flex-1 pt-0 px-4">
-      {children}
-    </main>
+    <main className="flex-1 pt-0 px-4">{children}</main>
   </div>
 );
 
 // --------------------- App ---------------------
 const App = () => {
   return (
-    <> <Toaster position="top-right" />
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Landingpage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/oauth-success" element={<OAuthSuccessPage />} />
+    <>
+      {" "}
+      <Toaster position="top-right" />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Landingpage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/oauth-success" element={<OAuthSuccessPage />} />
 
-      {/* Protected Routes with Sidebar */}
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <HomePage />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/career-os"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <CareerOS />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/marketplace"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <Marketplace />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/marketplace/product/:id"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <ProductDesc />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/mock-interview"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <Mockinterview />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/resume-tools"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <Resume />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/portfolio"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <Portfolio />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-     
-      <Route
-        path="/career-form"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <CareerForm />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected Routes with Sidebar */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <HomePage />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career-os"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <CareerOS />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <Marketplace />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace/product/:id"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <ProductDesc />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mock-interview"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <Mockinterview />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/resume-tools"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <Resume />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/portfolio"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <Portfolio />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Career Learning Routes with LearningNavbar */}
-      <Route
-        path="/career/status"
-        element={
-          <ProtectedRoute>
-            <CareerLayout>
-              <CareerStatus />
-            </CareerLayout>
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Skill Detail Page */}
-      <Route
-        path="/career/plan/skills/:skillId"
-        element={
-          <ProtectedRoute>
-            <CareerLayout>
-              <SkillDetailPage />
-            </CareerLayout>
-          </ProtectedRoute>
-        }
-      />
-      {/* Market place */}
-      <Route
-        path="/marketplace/mylistedproduct"
-        element={
-          <ProtectedRoute>
-           <UserListedProducts/>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/marketplace/mysoldproduct"
-        element={
-          <ProtectedRoute>
-           <SoldProduct/>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/marketplace/addproduct"
-        element={
-          <ProtectedRoute>
-           <AddProductForm/>
-          </ProtectedRoute>
-        }
-      />
-      {/* Career Plan Pages */}
-      <Route
-        path="/career/plan/*"
-        element={
-          <ProtectedRoute>
-            <CareerLayout>
-              <Routes>
-                <Route index element={<CareerPlanPage />} />
-                <Route path="overview" element={<CareerOverview />} />
-                <Route path="skills" element={<SkillsToLearn />} />
-                <Route path="projects" element={<PracticeProjects />} />
-                <Route path="resources" element={<LearningResources />} />
-                <Route path="progress" element={<ProgressTracker />} />
-                <Route path="roadmap" element={<Roadmap />} />
-                <Route path="communities" element={<Communities />} />
-                <Route path="outlook" element={<CareerOutlook />} />
-                <Route path="*" element={<Navigate to="/career/plan" replace />} />
-              </Routes>
-            </CareerLayout>
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path="/career-form"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <CareerForm />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Certificate Testing */}
-      <Route
-        path="/test"
-        element={
-          <ProtectedRoute>
-            <CertificateTest />
-          </ProtectedRoute>
-        }
-      />
+        {/* Career Learning Routes with LearningNavbar */}
+        <Route
+          path="/career/status"
+          element={
+            <ProtectedRoute>
+              <CareerLayout>
+                <CareerStatus />
+              </CareerLayout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Skill Detail Page */}
+        <Route
+          path="/career/plan/skills/:skillId"
+          element={
+            <ProtectedRoute>
+              <CareerLayout>
+                <SkillDetailPage />
+              </CareerLayout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Market place */}
+        <Route
+          path="/marketplace/mylistedproduct"
+          element={
+            <ProtectedRoute>
+              <UserListedProducts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace/mysoldproduct"
+          element={
+            <ProtectedRoute>
+              <SoldProduct />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace/addproduct"
+          element={
+            <ProtectedRoute>
+              <AddProductForm />
+            </ProtectedRoute>
+          }
+        />
+        {/* Career Plan Pages */}
+        <Route
+          path="/career/plan/*"
+          element={
+            <ProtectedRoute>
+              <CareerLayout>
+                <Routes>
+                  <Route index element={<CareerPlanPage />} />
+                  <Route path="overview" element={<CareerOverview />} />
+                  <Route path="skills" element={<SkillsToLearn />} />
+                  <Route path="projects" element={<PracticeProjects />} />
+                  <Route path="resources" element={<LearningResources />} />
+                  <Route path="progress" element={<ProgressTracker />} />
+                  <Route path="roadmap/:moduleId" element={<Roadmap />} />
+                  <Route path="communities" element={<Communities />} />
+                  <Route path="outlook" element={<CareerOutlook />} />
+                  <Route
+                    path="*"
+                    element={<Navigate to="/career/plan" replace />}
+                  />
+                </Routes>
+              </CareerLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Certificate Testing */}
+        <Route
+          path="/test"
+          element={
+            <ProtectedRoute>
+              <CertificateTest />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </>
   );
 };
 
 export default App;
+

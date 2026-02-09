@@ -46,7 +46,7 @@ const LearningNavbar = () => {
 
   const bellRef = useRef(null);
 
-  const toggleMenu = () => setIsOpen(v => !v);
+  const toggleMenu = () => setIsOpen((v) => !v);
 
   useEffect(() => {
     let alive = true;
@@ -76,9 +76,9 @@ const LearningNavbar = () => {
       }
     };
 
-    document.addEventListener('scroll', handleScroll);
+    document.addEventListener("scroll", handleScroll);
     return () => {
-      document.removeEventListener('scroll', handleScroll);
+      document.removeEventListener("scroll", handleScroll);
     };
   }, [scrolled]);
 
@@ -86,20 +86,23 @@ const LearningNavbar = () => {
     () =>
       profile?.profilePicture?.trim() ||
       "https://cdn-icons-png.flaticon.com/128/2202/2202112.png",
-    [profile]
+    [profile],
   );
 
   const navItems = useMemo(
     () => [
       { to: "/career/plan/skills", label: "Skills", icon: <FaLightbulb /> },
-      { to: "/career/plan/roadmap", label: "Roadmap", icon: <FaMap /> },
       { to: "/career/plan/projects", label: "Projects", icon: <FaTasks /> },
       { to: "/career/plan/resources", label: "Resources", icon: <FaBook /> },
-      { to: "/career/plan/communities", label: "Communities", icon: <FaUsers /> },
+      {
+        to: "/career/plan/communities",
+        label: "Communities",
+        icon: <FaUsers />,
+      },
       { to: "/career/plan/outlook", label: "Outlook", icon: <FaChartLine /> },
       { to: "/home", label: "Home", icon: <FaHome /> },
     ],
-    []
+    [],
   );
 
   // Close mobile menu when route changes
@@ -115,9 +118,9 @@ const LearningNavbar = () => {
       <header
         className={cn(
           "w-full fixed top-0 left-0 z-50 transition-all duration-300",
-          scrolled 
-            ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50" 
-            : "bg-white/80 backdrop-blur-md border-b border-gray-200/30"
+          scrolled
+            ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50"
+            : "bg-white/80 backdrop-blur-md border-b border-gray-200/30",
         )}
         role="banner"
       >
@@ -140,7 +143,10 @@ const LearningNavbar = () => {
           </button>
 
           {/* Desktop Nav - Center */}
-          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2" aria-label="Primary">
+          <nav
+            className="hidden lg:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2"
+            aria-label="Primary"
+          >
             {navItems.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -151,7 +157,7 @@ const LearningNavbar = () => {
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
                     isActive
                       ? "text-indigo-700 bg-indigo-50/80"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50"
+                      : "text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50",
                   )
                 }
               >
@@ -182,7 +188,7 @@ const LearningNavbar = () => {
                     className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center rounded-full"
                     aria-label={`${notificationsCount} unread notifications`}
                   >
-                    {notificationsCount > 9 ? '9+' : notificationsCount}
+                    {notificationsCount > 9 ? "9+" : notificationsCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -216,7 +222,11 @@ const LearningNavbar = () => {
               aria-expanded={isOpen ? "true" : "false"}
               aria-controls="mobile-nav"
             >
-              {isOpen ? <FaTimes className="w-5 h-5" /> : <FaBars className="w-5 h-5" />}
+              {isOpen ? (
+                <FaTimes className="w-5 h-5" />
+              ) : (
+                <FaBars className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -232,7 +242,10 @@ const LearningNavbar = () => {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-xl"
             >
-              <nav className="flex flex-col gap-1 px-4 py-3" aria-label="Mobile">
+              <nav
+                className="flex flex-col gap-1 px-4 py-3"
+                aria-label="Mobile"
+              >
                 {navItems.map(({ to, label, icon }) => (
                   <NavLink
                     key={to}
@@ -243,7 +256,7 @@ const LearningNavbar = () => {
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
                         isActive
                           ? "bg-indigo-50 text-indigo-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-100/50"
+                          : "text-gray-600 hover:bg-gray-100/50",
                       )
                     }
                   >
@@ -251,7 +264,7 @@ const LearningNavbar = () => {
                     {label}
                   </NavLink>
                 ))}
-                
+
                 {/* Mobile notification and profile */}
                 <div className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-between px-4">
                   <button
@@ -262,7 +275,7 @@ const LearningNavbar = () => {
                       <FaBell className="w-5 h-5" />
                       {notificationsCount > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-rose-500 text-white text-[10px] px-1">
-                          {notificationsCount > 9 ? '9+' : notificationsCount}
+                          {notificationsCount > 9 ? "9+" : notificationsCount}
                         </span>
                       )}
                     </div>
@@ -324,3 +337,4 @@ const LearningNavbar = () => {
 };
 
 export default LearningNavbar;
+

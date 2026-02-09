@@ -18,7 +18,6 @@ export const queryKeys = {
   test: (id) => ["learning:test", id],
 };
 
-
 export function useModules(params = {}, options = {}) {
   return useQuery({
     queryKey: keyWithParams(queryKeys.modules, params),
@@ -63,7 +62,6 @@ export function useDeleteModule() {
   });
 }
 
-
 export function useModulePathAI(moduleId, options = {}) {
   return useQuery({
     queryKey: ["learning:module:path", moduleId],
@@ -73,7 +71,18 @@ export function useModulePathAI(moduleId, options = {}) {
   });
 }
 
-
+export const useModuleRoadmap = (moduleId, options = {}) => {
+  return useQuery({
+    queryKey: ["module-roadmap", moduleId],
+    queryFn: async () => {
+      const { data } = await api.get(`/learning/modules/${moduleId}/roadmap`);
+      return data;
+    },
+    enabled: !!moduleId,
+    staleTime: 60_000,
+    ...options,
+  });
+};
 
 export function useSkills(params = {}, options = {}) {
   return useQuery({
@@ -135,7 +144,11 @@ export function useUpsertSkillProgress() {
           ...prev,
           progress,
           status:
-            progress >= 100 ? "completed" : progress > 0 ? "in_progress" : "not_started",
+            progress >= 100
+              ? "completed"
+              : progress > 0
+                ? "in_progress"
+                : "not_started",
         });
       }
       return { prev };
@@ -177,7 +190,7 @@ export function useSkillAIContent(skillId, options = {}) {
 export function useTopics(params = {}, options = {}) {
   return useQuery({
     queryKey: keyWithParams(queryKeys.topics, params), // e.g., ['learning:topics', { skillId }]
-    queryFn: () => learning.getTopics(params),         // make sure BE respects ?skillId=
+    queryFn: () => learning.getTopics(params), // make sure BE respects ?skillId=
     ...options,
   });
 }
@@ -191,8 +204,6 @@ export function useTopic(topicId, options = {}) {
   });
 }
 
-
-
 export function useCreateTopic() {
   const qc = useQueryClient();
   return useMutation({
@@ -200,7 +211,9 @@ export function useCreateTopic() {
     onSuccess: (_data, vars) => {
       // If you know skillId from vars, target it; otherwise fall back to broad invalidate.
       if (vars?.skillId) {
-        qc.invalidateQueries({ queryKey: queryKeys.topicsBySkill(vars.skillId) });
+        qc.invalidateQueries({
+          queryKey: queryKeys.topicsBySkill(vars.skillId),
+        });
       } else {
         qc.invalidateQueries({ queryKey: [queryKeys.topics] });
       }
@@ -215,7 +228,9 @@ export function useUpdateTopic(topicId) {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.topic(topicId) });
       if (vars?.skillId) {
-        qc.invalidateQueries({ queryKey: queryKeys.topicsBySkill(vars.skillId) });
+        qc.invalidateQueries({
+          queryKey: queryKeys.topicsBySkill(vars.skillId),
+        });
       } else {
         qc.invalidateQueries({ queryKey: [queryKeys.topics] });
       }
@@ -229,7 +244,9 @@ export function useDeleteTopic() {
     mutationFn: learning.deleteTopic,
     onSuccess: (_data, vars) => {
       if (vars?.skillId) {
-        qc.invalidateQueries({ queryKey: queryKeys.topicsBySkill(vars.skillId) });
+        qc.invalidateQueries({
+          queryKey: queryKeys.topicsBySkill(vars.skillId),
+        });
       } else {
         qc.invalidateQueries({ queryKey: [queryKeys.topics] });
       }
@@ -357,12 +374,9 @@ export function useGenerateTopicsForSkill(skillId) {
   });
 }
 
-
-
 // ✅ Skill status/progress upsert (start/done/reset)
 // src/hooks/useLearning.js
 // src/hooks/useLearning.js
-
 
 export function useUpsertSkillStatus() {
   const qc = useQueryClient();
@@ -375,8 +389,8 @@ export function useUpsertSkillStatus() {
     onMutate: async ({ skillId, status, progress }) => {
       // 1) cancel any outgoing refetches
       await Promise.all([
-        qc.cancelQueries({ queryKey: [queryKeys.skills] }),             // all skills lists
-        qc.cancelQueries({ queryKey: queryKeys.skill(skillId) }),       // single skill
+        qc.cancelQueries({ queryKey: [queryKeys.skills] }), // all skills lists
+        qc.cancelQueries({ queryKey: queryKeys.skill(skillId) }), // single skill
       ]);
 
       // 2) snapshot previous data
@@ -389,12 +403,12 @@ export function useUpsertSkillStatus() {
         typeof progress === "number"
           ? progress
           : status === "completed"
-          ? 100
-          : status === "not_started"
-          ? 0
-          : typeof curr === "number"
-          ? curr
-          : 0;
+            ? 100
+            : status === "not_started"
+              ? 0
+              : typeof curr === "number"
+                ? curr
+                : 0;
 
       // 3) patch single-skill cache
       if (prevSingle) {
@@ -413,8 +427,12 @@ export function useUpsertSkillStatus() {
           Array.isArray(arr)
             ? arr.map((s) =>
                 String(s?._id) === String(skillId)
-                  ? { ...s, status: status ?? s.status, progress: computeProgress(s.progress) }
-                  : s
+                  ? {
+                      ...s,
+                      status: status ?? s.status,
+                      progress: computeProgress(s.progress),
+                    }
+                  : s,
               )
             : arr;
 
@@ -434,7 +452,8 @@ export function useUpsertSkillStatus() {
 
     onError: (_err, { skillId }, ctx) => {
       // restore snapshots
-      if (ctx?.prevSingle) qc.setQueryData(queryKeys.skill(skillId), ctx.prevSingle);
+      if (ctx?.prevSingle)
+        qc.setQueryData(queryKeys.skill(skillId), ctx.prevSingle);
       if (ctx?.prevLists) {
         for (const [key, data] of ctx.prevLists) {
           qc.setQueryData(key, data);
@@ -450,8 +469,6 @@ export function useUpsertSkillStatus() {
     },
   });
 }
-
-
 
 // ✅ Topic status/progress upsert (start/done/reset)
 // Accept optional skillId so we can target the right topics bucket
@@ -475,5 +492,3 @@ export function useUpsertTopicStatus() {
     },
   });
 }
-
-

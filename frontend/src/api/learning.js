@@ -9,21 +9,32 @@ const qs = (obj = {}) =>
     .join("&");
 
 // normalize: accept either an array or { items: [...] }
-const toItems = (data) => (Array.isArray(data) ? data : data?.items ?? []);
+const toItems = (data) => (Array.isArray(data) ? data : (data?.items ?? []));
 
 /* ------------------------- BOOTSTRAP (one-time seeding) ------------------------- */
 
 // Create Modules + Skills from saved CareerPlan
-export const bootstrapSkillsFromPlan = async ({ userId, moduleTitle, mode } = {}) => {
-  const res = await api.post("/learning/bootstrap/skills", { userId, moduleTitle, mode });
+export const bootstrapSkillsFromPlan = async ({
+  userId,
+  moduleTitle,
+  mode,
+} = {}) => {
+  const res = await api.post("/learning/bootstrap/skills", {
+    userId,
+    moduleTitle,
+    mode,
+  });
   return res.data;
 };
 
 // Generate topics for a single skill
 export const bootstrapTopicsForSkill = async (skillId, { difficulty } = {}) => {
-  const res = await api.post(`/learning/bootstrap/skills/${skillId}/generate-topics`, {
-    difficulty,
-  });
+  const res = await api.post(
+    `/learning/bootstrap/skills/${skillId}/generate-topics`,
+    {
+      difficulty,
+    },
+  );
   return res.data;
 };
 
@@ -84,10 +95,10 @@ export const getSkills = async (params = {}) => {
 // Skill detail
 export const getSkillById = async (skillId) => {
   console.log("requesting ");
-  
+
   const res = await api.get(`/learning/skills/${skillId}`);
   console.log(res.data);
-  
+
   return res.data;
 };
 
@@ -209,4 +220,8 @@ export const deleteTest = async (testId) => {
 export const generateTestQuestionsAI = async (testId) => {
   const res = await api.get(`/learning/tests/${testId}/generate-questions`);
   return res.data;
+};
+export const getModuleRoadmap = async (moduleId) => {
+  const res = await api.get(`/learning/modules/${moduleId}/roadmap`);
+  return res.data; // { nodes, edges }
 };

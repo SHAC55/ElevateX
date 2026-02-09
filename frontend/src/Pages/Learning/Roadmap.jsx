@@ -1,15 +1,18 @@
 // src/pages/Roadmap.jsx
-import React from "react";
+import { useEffect, useState } from "react";
+import { getModuleRoadmap } from "../../api/learning";
+import RoadmapCanvas from "../../Components/Learning/Roadmap/RoadmapCanvas";
+import { useParams } from "react-router-dom";
 
-const Roadmap = () => {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Practice Projects</h1>
-      <p className="mt-4 text-gray-600">
-        This is the Practice Projects page (dummy content).
-      </p>
-    </div>
-  );
-};
+export default function Roadmap() {
+  const { moduleId } = useParams();
+  const [data, setData] = useState(null);
 
-export default Roadmap;
+  useEffect(() => {
+    getModuleRoadmap(moduleId).then(setData);
+  }, [moduleId]);
+
+  if (!data) return <div>Loading roadmap...</div>;
+
+  return <RoadmapCanvas data={data} />;
+}
