@@ -37,6 +37,7 @@ import AddProductForm from "./Pages/AddProductForm";
 import { Toaster } from "react-hot-toast";
 import UserListedProducts from "./Pages/UserListedProducts";
 import ProductDesc from "./Pages/ProductDesc";
+import IndustyInsight from "./Pages/IndustyInsight";
 
 // --------------------- Layouts ---------------------
 const SidebarLayout = ({ children }) => (
@@ -230,6 +231,15 @@ const App = () => {
         element={
           <ProtectedRoute>
             <CertificateTest />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/industry-insights"
+        element={
+          <ProtectedRoute>
+            <IndustyInsight />
           </ProtectedRoute>
         }
       />

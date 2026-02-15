@@ -66,6 +66,7 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
     { to: "/career-os", label: "CareerOS", icon: <FaBriefcase /> },
     { to: "/marketplace", label: "Marketplace", icon: <FaStore /> },
     { to: "/mock-interview", label: "Mock Interview", icon: <FaComments /> },
+    { to: "/industry-insights", label: "Insights", icon: <FaComments /> },
     { to: "/resume-tools", label: "Resume Tools", icon: <FaFileAlt /> },
     {
       label: "Profile",
