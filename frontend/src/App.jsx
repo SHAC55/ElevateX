@@ -12,14 +12,13 @@ import OAuthSuccessPage from "./Pages/OauthSuccess";
 import SidebarNav from "./Components/SidebarNav";
 import CareerOS from "./Pages/CareerOS";
 import Marketplace from "./Pages/Marketplace";
-import Mockinterview from "./Pages/Mockinterview";
 import Resume from "./Pages/Resume";
 import Portfolio from "./Pages/Portfolio";
 import CareerForm from "./Pages/CareerForm";
 import CareerStatus from "./Pages/CareerStatus";
 import CareerPlanPage from "./Pages/CareerPlanPage";
 import CertificateTest from "./Components/CertificateTest";
-
+import Interview from "./Pages/Interview";
 // ✅ Learning Section
 import LearningNavbar from "./Components/Learning/LearningNavbar";
 import CareerOverview from "./Pages/Learning/CareerOverview";
@@ -114,7 +113,7 @@ const App = () => {
           element={
             <ProtectedRoute>
               <SidebarLayout>
-                <Mockinterview />
+                <Interview />
               </SidebarLayout>
             </ProtectedRoute>
           }

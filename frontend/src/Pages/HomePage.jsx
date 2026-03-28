@@ -40,7 +40,6 @@
 //     dashboardData;
 
 //     console.log(skills);
-    
 
 //   const miniDash = [
 //     { Tag: "Skills Completed", Num: completedSkills },
@@ -110,7 +109,6 @@
 
 // export default HomePage;
 
-
 // src/pages/HomePage.jsx
 import React, { useEffect, useState } from "react";
 import MegaprjDash from "../Components/MegaprjDash";
@@ -122,7 +120,7 @@ const HomePage = () => {
   const [userName, setUserName] = useState("");
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [statusRes, setStatusRes] = useState(null);
   useEffect(() => {
     const boot = async () => {
       try {
@@ -131,6 +129,7 @@ const HomePage = () => {
           getDetailedJourneyDashboard(),
         ]);
         setUserName(statusRes?.user || "STUDENT");
+        setStatusRes(statusRes);
         setDashboardData(dashRes);
       } catch (err) {
         console.error("Failed to load homepage:", err);
@@ -151,14 +150,13 @@ const HomePage = () => {
     miniProjects,
     resumeScore,
     projects,
-    goal,
     skills,
   } = dashboardData;
-
+  console.log(statusRes);
   const miniDash = [
     { Tag: "Skills Completed", Num: completedSkills },
     { Tag: "Skills In Progress", Num: inProgressSkills },
-    { Tag: "Mini Projects", Num: miniProjects },  // currently 0 from API helper; wire real data when ready
+    { Tag: "Mini Projects", Num: miniProjects }, // currently 0 from API helper; wire real data when ready
     { Tag: "ATS Resume Score", Num: resumeScore }, // currently 0 from API helper
   ];
 
@@ -171,7 +169,7 @@ const HomePage = () => {
       <div className="flex mt-6 items-center">
         <h3 className="text-xl font-medium">Current Goal :</h3>
         <p className="text-xl font-medium ml-2 bg-blue-100 p-2 rounded-md">
-          {goal || "Not set"}
+          {statusRes.choice.careergoal || "Not set"}
         </p>
       </div>
 
