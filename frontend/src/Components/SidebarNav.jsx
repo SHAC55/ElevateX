@@ -20,7 +20,7 @@ import { useNotificationSocket } from "../hooks/useNotificationSocket";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 
-const TopNavbar = ({ notificationsFromDB = [] }) => {
+const SidebarNav = ({ notificationsFromDB = [] }) => {
   // ✅ fixed useAuth usage
   const { logout } = useAuth();
 
@@ -105,7 +105,7 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
                 >
                   {label}
                 </button>
-              )
+              ),
             )}
           </nav>
 
@@ -215,7 +215,7 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
                   >
                     {label}
                   </button>
-                )
+                ),
               )}
 
               {/* 🚀 Logout Button (Mobile) */}
@@ -267,4 +267,4 @@ const TopNavbar = ({ notificationsFromDB = [] }) => {
   );
 };
 
-export default TopNavbar;
+export default SidebarNav;
