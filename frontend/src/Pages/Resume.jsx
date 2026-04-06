@@ -1,407 +1,1038 @@
-import React, { useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Briefcase,
+  Download,
+  FolderKanban,
+  GraduationCap,
+  LayoutTemplate,
+  Plus,
+  Save,
+  Sparkles,
+  Target,
+  Trophy,
+  UserRound,
+  WandSparkles,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import {
+  analyzeResumeVersion,
+  createResumeVersion,
+  downloadResumePdf,
+  generateResumeVersion,
+  getResumeVersion,
+  getResumeWorkspace,
+  updateResumeProfile,
+  updateResumeVersion,
+} from "../api/resume";
 
-const Styles = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
-    .rv-root,.rv-root *,.rv-root *::before,.rv-root *::after{box-sizing:border-box}
-    .rv-root *{margin:0;padding:0}.rv-root{--cream:#f5f0e8;--cream-dim:#ede8dc;--ink:#0f0e0c;--ink-2:#2a2925;--ink-3:#4a4840;--ink-4:#7a7770;--ink-5:#a8a49c;--gold:#c9a84c;--gold-dim:rgba(201,168,76,.15);--gold-border:rgba(201,168,76,.3);--green:#2d6a4f;--green-bg:rgba(45,106,79,.08);--green-border:rgba(45,106,79,.2);--red:#9b2335;--red-bg:rgba(155,35,53,.07);--surface:#faf8f3;--border:rgba(15,14,12,.1);--border-2:rgba(15,14,12,.06);--shadow-sm:0 1px 3px rgba(15,14,12,.06),0 1px 2px rgba(15,14,12,.04);--shadow-md:0 4px 16px rgba(15,14,12,.08),0 2px 6px rgba(15,14,12,.05);--font-serif:"Instrument Serif",Georgia,serif;--font-sans:"Geist",system-ui,sans-serif;--font-mono:"Geist Mono",monospace;min-height:100vh;background:var(--cream);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
-    .rv-root::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.022;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px}
-    .rv-root ::-webkit-scrollbar{width:4px}.rv-root ::-webkit-scrollbar-track{background:transparent}.rv-root ::-webkit-scrollbar-thumb{background:var(--ink-5);border-radius:4px}
-    .rv-root textarea,.rv-root input{width:100%;font-family:var(--font-sans);font-size:13px;color:var(--ink);background:transparent;border:none;outline:none;resize:none}
-    .rv-root textarea::placeholder,.rv-root input::placeholder{color:var(--ink-5)}
-    .rv-root .label{font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
-    .rv-root .serif{font-family:var(--font-serif)}
-    .rv-shell{max-width:1600px;margin:0 auto;padding:0 28px 60px}
-    .rv-topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 0 6px;border-bottom:1px solid var(--border);margin-bottom:28px}
-    .rv-topbar-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
-    .rv-grid{display:grid;grid-template-columns:230px minmax(0,1fr) 320px;gap:18px;align-items:start}
-    .rv-column{display:flex;flex-direction:column;gap:16px}
-    .rv-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
-    .rv-actions{display:flex;gap:8px;flex-shrink:0}
-    .rv-identity,.rv-scorecard{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .rv-scorecard{gap:8px}
-    @media (max-width:1200px){.rv-grid{grid-template-columns:220px minmax(0,1fr)}.rv-right{grid-column:1 / -1}}
-    @media (max-width:920px){.rv-shell{padding:0 16px 40px}.rv-topbar{flex-direction:column;align-items:flex-start}.rv-topbar-meta{width:100%;flex-wrap:wrap}.rv-grid{grid-template-columns:1fr}.rv-header{flex-direction:column}.rv-actions{width:100%;flex-wrap:wrap}.rv-identity,.rv-scorecard{grid-template-columns:1fr}}
-  `}</style>
-);
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap');
+  .resume-shell,.resume-shell *,.resume-shell *::before,.resume-shell *::after{box-sizing:border-box}
+  .resume-shell{--bg:#f4efe6;--paper:#fffdf8;--panel:#f8f2e8;--ink:#141210;--muted:#6e655c;--line:rgba(20,18,16,.10);--accent:#c2612d;--accent-soft:rgba(194,97,45,.12);--success:#146c43;--success-soft:rgba(20,108,67,.10);--warning:#b7791f;--danger:#9f2d2d;min-height:100vh;color:var(--ink);font-family:"Space Grotesk",system-ui,sans-serif;background:
+  radial-gradient(circle at top left, rgba(194,97,45,.10), transparent 28%),
+  radial-gradient(circle at top right, rgba(20,108,67,.10), transparent 24%),
+  linear-gradient(180deg, #f7f3ea 0%, #efe5d6 100%);padding:24px}
+  .resume-shell button,.resume-shell input,.resume-shell textarea{font:inherit}
+  .resume-shell input,.resume-shell textarea,.resume-shell select{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;color:var(--ink);outline:none}
+  .resume-shell textarea{resize:vertical;min-height:110px}
+  .resume-shell input:focus,.resume-shell textarea:focus,.resume-shell select:focus{border-color:rgba(194,97,45,.45);box-shadow:0 0 0 4px rgba(194,97,45,.10)}
+  .resume-shell .card{background:rgba(255,253,248,.88);border:1px solid rgba(20,18,16,.08);backdrop-filter:blur(14px);border-radius:24px;box-shadow:0 18px 50px rgba(76,49,28,.08)}
+  .resume-shell .label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .resume-shell .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600}
+  .resume-shell .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:11px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  .resume-shell .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .resume-shell .btn.accent{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .resume-shell .btn:disabled{opacity:.55;cursor:not-allowed}
+  .resume-shell .grid{display:grid;grid-template-columns:280px minmax(0,1fr) 340px;gap:18px;align-items:start}
+  .resume-shell .stack{display:flex;flex-direction:column;gap:16px}
+  .resume-shell .version-btn{width:100%;text-align:left;padding:16px;border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .resume-shell .version-btn.active{background:linear-gradient(135deg,#141210 0%,#362316 100%);color:#fff;border-color:#141210}
+  .resume-shell .version-btn.active .muted{color:rgba(255,255,255,.70)}
+  .resume-shell .muted{color:var(--muted)}
+  .resume-shell .hero{display:flex;justify-content:space-between;gap:20px;padding:28px}
+  .resume-shell .hero h1{font-family:"Fraunces",serif;font-weight:600;font-size:40px;line-height:1}
+  .resume-shell .hero p{max-width:760px;font-size:15px;line-height:1.7;color:var(--muted);margin-top:12px}
+  .resume-shell .section-tabs{display:flex;flex-wrap:wrap;gap:8px}
+  .resume-shell .tab{padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  .resume-shell .tab.active{background:var(--accent-soft);border-color:rgba(194,97,45,.32);color:var(--accent);font-weight:700}
+  .resume-shell .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .resume-shell .three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .resume-shell .entry{padding:16px;border-radius:18px;border:1px solid var(--line);background:var(--paper)}
+  .resume-shell .score{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .resume-shell .score-card{padding:14px;border-radius:18px;background:var(--panel);border:1px solid var(--line)}
+  .resume-shell .template-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .resume-shell .template-card{padding:16px;border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;text-align:left}
+  .resume-shell .template-card.active{border-color:var(--accent);background:linear-gradient(180deg,rgba(194,97,45,.10),rgba(255,255,255,.98))}
+  .resume-shell .diag{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:#fff}
+  .resume-shell .preview-section{padding-top:14px;border-top:1px solid var(--line)}
+  .resume-shell .preview-section:first-of-type{padding-top:0;border-top:none}
+  .resume-shell .list{display:flex;flex-direction:column;gap:10px}
+  .resume-shell .mini{font-size:12px}
+  @media (max-width:1280px){.resume-shell .grid{grid-template-columns:260px minmax(0,1fr)}.resume-shell .rail{grid-column:1/-1}}
+  @media (max-width:900px){.resume-shell{padding:14px}.resume-shell .grid,.resume-shell .two-col,.resume-shell .three-col{grid-template-columns:1fr}.resume-shell .hero{flex-direction:column}.resume-shell .hero h1{font-size:32px}}
+`;
 
-// BACKEND: replace these mocked versions with GET /resume/versions.
-const VERSIONS = [
-  { id: 1, name: "Head of Product", company: "Stripe", fit: 94, status: "Ready", color: "#2d6a4f" },
-  { id: 2, name: "Growth PM", company: "Notion", fit: 89, status: "Draft", color: "#c9a84c" },
-  { id: 3, name: "Product Lead", company: "Zepto", fit: 86, status: "Review", color: "#9b2335" },
+const SECTION_OPTIONS = [
+  { id: "summary", label: "Summary", icon: Sparkles },
+  { id: "experience", label: "Experience", icon: Briefcase },
+  { id: "projects", label: "Projects", icon: FolderKanban },
+  { id: "skills", label: "Skills", icon: Target },
+  { id: "education", label: "Education", icon: GraduationCap },
+  { id: "certifications", label: "Certifications", icon: Trophy },
 ];
 
-const SECTIONS = [
-  { id: "summary", label: "Summary" },
-  { id: "experience", label: "Experience" },
-  { id: "skills", label: "Skills" },
-  { id: "projects", label: "Projects" },
-];
+const emptyExperience = () => ({
+  company: "",
+  title: "",
+  location: "",
+  startDate: "",
+  endDate: "",
+  current: false,
+  summary: "",
+  achievements: [""],
+  skills: [],
+});
 
-// BACKEND: replace with JD analysis + scoring response.
-const INSIGHTS = [
-  { type: "gap", icon: "01", title: "Missing evidence", body: "Add one bullet proving you designed an experiment, shipped it, and quantified the outcome." },
-  { type: "strong", icon: "02", title: "Strong match", body: "Platform strategy, cross-functional leadership, and 0-to-1 launches map directly to this role." },
-  { type: "fix", icon: "03", title: "Narrative fix", body: "Open your summary with growth systems and business outcomes, not a generic identity line." },
-];
+const emptyProject = () => ({
+  name: "",
+  summary: "",
+  highlights: [""],
+  technologies: [],
+  link: "",
+});
 
-// BACKEND: hydrate from GET /resume/versions/:id.
-const INITIAL_STATE = {
-  fullName: "Aanya Mehta",
-  headline: "Product leader focused on growth systems, platform bets, and measurable execution.",
-  summary: "Product leader with 7+ years translating ambiguous market signals into roadmaps, experiments, and launches that improve user activation, retention, and revenue quality.",
-  experience: "Led cross-functional pod of 9 across product, design, and engineering to redesign onboarding, increasing activation 27% and reducing time-to-value from 3.4 to 1.9 days.\n\nBuilt phased experimentation roadmap for marketplace growth, lifting qualified supply 31% and improving first-week conversion 19%.",
-  skills: "Growth strategy | Experimentation | Roadmapping | Product analytics | Cross-functional leadership | Stakeholder management",
-  projects: "Marketplace architecture rebuild\nCreator onboarding funnel optimization\nExperimentation framework rollout",
-  roleTitle: "Head of Product",
-  targetCompany: "Stripe",
+const emptyEducation = () => ({
+  school: "",
+  degree: "",
+  field: "",
+  startDate: "",
+  endDate: "",
+  grade: "",
+});
+
+const parseLines = (value) =>
+  String(value || "")
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const joinLines = (items) => (Array.isArray(items) ? items.filter(Boolean).join("\n") : "");
+
+const parseTags = (value) =>
+  String(value || "")
+    .split(/[\n,|]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const syncVersionSummary = (version) => ({
+  id: version._id || version.id,
+  title: version.title,
+  targetRole: version.targetRole,
+  targetCompany: version.targetCompany,
+  templateId: version.templateId,
+  status: version.status,
+  updatedAt: version.updatedAt,
+  scorecard: version.scorecard || {},
+});
+
+const scoreTone = (score) => {
+  if (score >= 80) return { color: "#146c43", bg: "rgba(20,108,67,.10)" };
+  if (score >= 60) return { color: "#b7791f", bg: "rgba(183,121,31,.12)" };
+  return { color: "#9f2d2d", bg: "rgba(159,45,45,.10)" };
 };
 
-// BACKEND: seed from selected application or saved JD.
-const INITIAL_JD = "We need a product leader who has driven 0 to 1 launches, built experimentation systems, partnered deeply with engineering and design, and translated ambiguous market signals into roadmap decisions with measurable growth outcomes.";
+const FALLBACK_TEMPLATES = [
+  { id: "classic", name: "Classic", description: "Single-column ATS-safe layout.", previewTone: "Conservative", accent: "#1f4b99" },
+  { id: "modern", name: "Modern", description: "Two-column layout with a skills rail.", previewTone: "Product", accent: "#0f766e" },
+  { id: "compact", name: "Compact", description: "Dense one-page format.", previewTone: "ATS", accent: "#7c2d12" },
+  { id: "executive", name: "Executive", description: "Leadership-forward narrative layout.", previewTone: "Leadership", accent: "#6b21a8" },
+];
 
-function Card({ children, style = {} }) {
-  return <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20, boxShadow: "var(--shadow-sm)", ...style }}>{children}</div>;
-}
+function Resume() {
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [templates, setTemplates] = useState(FALLBACK_TEMPLATES);
+  const [versions, setVersions] = useState([]);
+  const [activeVersion, setActiveVersion] = useState(null);
+  const [activeSection, setActiveSection] = useState("summary");
+  const [newVersion, setNewVersion] = useState({
+    title: "",
+    targetRole: "",
+    targetCompany: "",
+  });
 
-function Pill({ children, variant = "default" }) {
-  const tones = {
-    default: { bg: "rgba(15,14,12,.06)", color: "var(--ink-3)", border: "var(--border-2)" },
-    gold: { bg: "var(--gold-dim)", color: "var(--gold)", border: "var(--gold-border)" },
-    green: { bg: "var(--green-bg)", color: "var(--green)", border: "var(--green-border)" },
+  const loadWorkspace = async () => {
+    setLoading(true);
+    try {
+      const data = await getResumeWorkspace();
+      setProfile(data.profile);
+      setTemplates(data.templates || FALLBACK_TEMPLATES);
+      setVersions(data.versions || []);
+      setActiveVersion(data.activeVersion || null);
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not load resume workspace");
+    } finally {
+      setLoading(false);
+    }
   };
-  const tone = tones[variant];
-  return <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 12px", borderRadius: 100, background: tone.bg, color: tone.color, border: `1px solid ${tone.border}`, fontSize: 12, fontWeight: 500 }}>{children}</span>;
-}
 
-function Btn({ children, solid = false }) {
-  return (
-    <motion.button
-      whileHover={{ scale: 1.03 }}
-      whileTap={{ scale: 0.97 }}
-      style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 12, background: solid ? "var(--ink)" : "transparent", color: solid ? "var(--cream)" : "var(--ink-3)", border: solid ? "none" : "1px solid var(--border)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}
-    >
-      {children}
-    </motion.button>
+  useEffect(() => {
+    loadWorkspace();
+  }, []);
+
+  const versionScore = activeVersion?.scorecard?.overall || 0;
+  const deferredKeywords = useMemo(
+    () => activeVersion?.analysis?.keywords || [],
+    [activeVersion?.analysis?.keywords],
   );
-}
 
-function FitBar({ value }) {
-  const color = value >= 90 ? "var(--green)" : value >= 80 ? "var(--gold)" : "var(--red)";
-  return <div style={{ width: "100%", height: 2, background: "var(--border)", borderRadius: 100, overflow: "hidden" }}><motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.3 }} style={{ height: "100%", background: color }} /></div>;
-}
+  const selectVersion = async (id) => {
+    if (!id || activeVersion?._id === id) return;
+    setBusy("load-version");
+    try {
+      const version = await getResumeVersion(id);
+      setActiveVersion(version);
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not open that version");
+    } finally {
+      setBusy("");
+    }
+  };
 
-function ScoreRing({ value }) {
-  const size = 52;
-  const stroke = 4;
-  const r = (size - stroke * 2) / 2;
-  const c = 2 * Math.PI * r;
-  const offset = c - (value / 100) * c;
-  const color = value >= 90 ? "var(--green)" : value >= 80 ? "var(--gold)" : "var(--red)";
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-        <motion.circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: offset }} transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }} />
-      </svg>
-      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color }}>{value}%</div>
-    </div>
-  );
-}
+  const updateBasics = (key, value) => {
+    setProfile((current) => ({
+      ...current,
+      basics: { ...current.basics, [key]: value },
+    }));
+  };
 
-function VersionSidebar({ activeId, setActiveId }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ padding: "0 4px 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span className="label">Versions</span>
-        {/* BACKEND: POST /resume/versions/new should create a new draft version. */}
-        <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{ width: 26, height: 26, borderRadius: 8, background: "var(--ink)", color: "var(--cream)", border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>+</motion.button>
+  const updateTargeting = (key, value) => {
+    setProfile((current) => ({
+      ...current,
+      targeting: { ...current.targeting, [key]: value },
+    }));
+  };
+
+  const patchVersion = (updater) => {
+    setActiveVersion((current) => (typeof updater === "function" ? updater(current) : current));
+  };
+
+  const updateVersionField = (key, value) => {
+    patchVersion((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateSection = (key, value) => {
+    patchVersion((current) => ({
+      ...current,
+      sections: { ...current.sections, [key]: value },
+    }));
+  };
+
+  const updateExperience = (index, key, value) => {
+    patchVersion((current) => {
+      const next = [...(current.sections.experience || [])];
+      next[index] = { ...next[index], [key]: value };
+      return { ...current, sections: { ...current.sections, experience: next } };
+    });
+  };
+
+  const updateProject = (index, key, value) => {
+    patchVersion((current) => {
+      const next = [...(current.sections.projects || [])];
+      next[index] = { ...next[index], [key]: value };
+      return { ...current, sections: { ...current.sections, projects: next } };
+    });
+  };
+
+  const updateEducation = (index, key, value) => {
+    patchVersion((current) => {
+      const next = [...(current.sections.education || [])];
+      next[index] = { ...next[index], [key]: value };
+      return { ...current, sections: { ...current.sections, education: next } };
+    });
+  };
+
+  const saveEverything = async () => {
+    if (!activeVersion || !profile) return;
+    setBusy("save");
+    try {
+      const nextProfile = {
+        basics: profile.basics,
+        targeting: {
+          ...profile.targeting,
+          targetRoles: parseTags(profile.targeting?.targetRoles?.join("\n") || ""),
+          interestAreas: parseTags(profile.targeting?.interestAreas?.join("\n") || ""),
+        },
+        experience: activeVersion.sections.experience || [],
+        projects: activeVersion.sections.projects || [],
+        education: activeVersion.sections.education || [],
+        certifications: (activeVersion.sections.certifications || []).map((name) => ({
+          name,
+          issuer: "",
+          issuedAt: "",
+        })),
+        skillInventory: (activeVersion.sections.skills || []).map((name) => ({
+          name,
+          level: "",
+          category: "resume",
+          evidence: "",
+        })),
+      };
+
+      await updateResumeProfile(nextProfile);
+      const savedVersion = await updateResumeVersion(activeVersion._id, {
+        title: activeVersion.title,
+        targetRole: activeVersion.targetRole,
+        targetCompany: activeVersion.targetCompany,
+        templateId: activeVersion.templateId,
+        theme: activeVersion.theme,
+        layout: activeVersion.layout,
+        jobDescription: activeVersion.jobDescription,
+        status: activeVersion.status,
+        sections: activeVersion.sections,
+      });
+
+      setActiveVersion(savedVersion);
+      setVersions((current) => {
+        const summary = syncVersionSummary(savedVersion);
+        const withoutActive = current.filter((item) => item.id !== summary.id);
+        return [summary, ...withoutActive];
+      });
+      toast.success("Resume workspace saved");
+    } catch (error) {
+      console.error(error);
+      toast.error("Save failed");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const createVersion = async () => {
+    setBusy("create");
+    try {
+      const version = await createResumeVersion(newVersion);
+      setActiveVersion(version);
+      setVersions((current) => [syncVersionSummary(version), ...current]);
+      setNewVersion({ title: "", targetRole: "", targetCompany: "" });
+      toast.success("New tailored version created");
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not create a new version");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const analyze = async () => {
+    if (!activeVersion?._id) return;
+    setBusy("analyze");
+    try {
+      await updateResumeVersion(activeVersion._id, {
+        title: activeVersion.title,
+        targetRole: activeVersion.targetRole,
+        targetCompany: activeVersion.targetCompany,
+        templateId: activeVersion.templateId,
+        theme: activeVersion.theme,
+        layout: activeVersion.layout,
+        jobDescription: activeVersion.jobDescription,
+        status: activeVersion.status,
+        sections: activeVersion.sections,
+      });
+      const version = await analyzeResumeVersion(activeVersion._id);
+      setActiveVersion(version);
+      setVersions((current) =>
+        current.map((item) => (item.id === version._id ? syncVersionSummary(version) : item)),
+      );
+      toast.success("JD analysis complete");
+    } catch (error) {
+      console.error(error);
+      toast.error("Analysis failed");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const generate = async () => {
+    if (!activeVersion?._id) return;
+    setBusy("generate");
+    try {
+      await updateResumeVersion(activeVersion._id, {
+        title: activeVersion.title,
+        targetRole: activeVersion.targetRole,
+        targetCompany: activeVersion.targetCompany,
+        templateId: activeVersion.templateId,
+        theme: activeVersion.theme,
+        layout: activeVersion.layout,
+        jobDescription: activeVersion.jobDescription,
+        status: activeVersion.status,
+        sections: activeVersion.sections,
+      });
+      const version = await generateResumeVersion(activeVersion._id);
+      setActiveVersion(version);
+      setVersions((current) =>
+        current.map((item) => (item.id === version._id ? syncVersionSummary(version) : item)),
+      );
+      toast.success("Tailored draft generated");
+    } catch (error) {
+      console.error(error);
+      toast.error("Generation failed");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const exportPdf = async () => {
+    if (!activeVersion?._id) return;
+    setBusy("export");
+    try {
+      const blob = await downloadResumePdf(activeVersion._id);
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${(activeVersion.title || "resume").replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      toast.error("PDF export failed");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="resume-shell">
+        <style>{styles}</style>
+        <div className="card" style={{ padding: 32 }}>
+          Loading resume builder...
+        </div>
       </div>
-      {VERSIONS.map((version, i) => {
-        const active = version.id === activeId;
-        return (
-          <motion.button key={version.id} onClick={() => setActiveId(version.id)} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} whileHover={{ x: 2 }} style={{ width: "100%", textAlign: "left", cursor: "pointer", padding: "14px 16px", borderRadius: 16, background: active ? "var(--ink)" : "var(--surface)", border: `1px solid ${active ? "var(--ink)" : "var(--border)"}`, boxShadow: active ? "var(--shadow-md)" : "var(--shadow-sm)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    );
+  }
+
+  if (!profile || !activeVersion) {
+    return (
+      <div className="resume-shell">
+        <style>{styles}</style>
+        <div className="card" style={{ padding: 32 }}>
+          Resume workspace is not available right now.
+        </div>
+      </div>
+    );
+  }
+
+  const tone = scoreTone(versionScore);
+  const activeTemplate =
+    templates.find((template) => template.id === activeVersion.templateId) ||
+    FALLBACK_TEMPLATES[0];
+
+  return (
+    <div className="resume-shell">
+      <style>{styles}</style>
+
+      <motion.section
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card hero"
+      >
+        <div>
+          <div className="pill">
+            <WandSparkles size={14} />
+            YC-grade resume engine
+          </div>
+          <h1>ElevateX Resume OS</h1>
+          <p>
+            This builder uses the user&apos;s career choice, profile links, and job description
+            to create tailored resume versions with fit scoring, keyword coverage, and a clean export path.
+          </p>
+        </div>
+
+        <div className="stack" style={{ minWidth: 320 }}>
+          <div className="two-col">
+            <input
+              placeholder="Target role"
+              value={newVersion.targetRole}
+              onChange={(event) =>
+                setNewVersion((current) => ({ ...current, targetRole: event.target.value }))
+              }
+            />
+            <input
+              placeholder="Target company"
+              value={newVersion.targetCompany}
+              onChange={(event) =>
+                setNewVersion((current) => ({ ...current, targetCompany: event.target.value }))
+              }
+            />
+          </div>
+          <input
+            placeholder="Version title"
+            value={newVersion.title}
+            onChange={(event) =>
+              setNewVersion((current) => ({ ...current, title: event.target.value }))
+            }
+          />
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className="btn accent" onClick={createVersion} disabled={busy === "create"}>
+              <Plus size={16} />
+              New version
+            </button>
+            <button className="btn" onClick={saveEverything} disabled={Boolean(busy)}>
+              <Save size={16} />
+              Save all
+            </button>
+            <button className="btn" onClick={analyze} disabled={Boolean(busy)}>
+              <Sparkles size={16} />
+              Analyze
+            </button>
+            <button className="btn primary" onClick={generate} disabled={Boolean(busy)}>
+              <WandSparkles size={16} />
+              Tailor
+            </button>
+            <button className="btn" onClick={exportPdf} disabled={Boolean(busy)}>
+              <Download size={16} />
+              PDF
+            </button>
+          </div>
+        </div>
+      </motion.section>
+
+      <div className="grid" style={{ marginTop: 18 }}>
+        <aside className="stack">
+          <section className="card" style={{ padding: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span className="label" style={{ marginBottom: 0 }}>Versions</span>
+              <span className="pill">{versions.length}</span>
+            </div>
+            <div className="stack" style={{ gap: 10 }}>
+              {versions.map((version) => {
+                const active = version.id === activeVersion._id;
+                const itemTone = scoreTone(version.scorecard?.overall || 0);
+                return (
+                  <button
+                    key={version.id}
+                    className={`version-btn ${active ? "active" : ""}`}
+                    onClick={() => selectVersion(version.id)}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{version.title}</div>
+                        <div className="muted mini">{version.targetCompany || "General"} · {version.targetRole || "Open role"}</div>
+                        <div className="muted mini" style={{ marginTop: 4 }}>{version.templateId || "classic"} template</div>
+                      </div>
+                      <div
+                        style={{
+                          minWidth: 48,
+                          textAlign: "center",
+                          borderRadius: 12,
+                          padding: "6px 8px",
+                          background: active ? "rgba(255,255,255,.12)" : itemTone.bg,
+                          color: active ? "#fff" : itemTone.color,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {version.scorecard?.overall || 0}
+                      </div>
+                    </div>
+                    <div className="muted mini" style={{ marginTop: 10, textTransform: "capitalize" }}>
+                      {version.status}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 18 }}>
+            <span className="label">Section focus</span>
+            <div className="section-tabs">
+              {SECTION_OPTIONS.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <button
+                    key={section.id}
+                    className={`tab ${activeSection === section.id ? "active" : ""}`}
+                    onClick={() => setActiveSection(section.id)}
+                  >
+                    <Icon size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
+                    {section.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </aside>
+
+        <main className="stack">
+          <section className="card" style={{ padding: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <UserRound size={18} />
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: active ? "var(--cream)" : "var(--ink)", lineHeight: 1.3 }}>{version.name}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: active ? "rgba(245,240,232,.5)" : "var(--ink-5)", marginTop: 2 }}>{version.company}</div>
-              </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: active ? "var(--gold)" : version.color }}>{version.fit}%</div>
-            </div>
-            <div style={{ marginTop: 10 }}><FitBar value={version.fit} /></div>
-            <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: active ? "rgba(245,240,232,.4)" : "var(--ink-5)", letterSpacing: ".06em", textTransform: "uppercase" }}>{version.status}</span>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: version.status === "Ready" ? "var(--green)" : version.status === "Draft" ? "var(--gold)" : "var(--red)" }} />
-            </div>
-          </motion.button>
-        );
-      })}
-      <div style={{ marginTop: 16, padding: "0 4px 10px" }}><span className="label">Sections</span></div>
-    </div>
-  );
-}
-
-function SectionNav({ active, setActive }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {SECTIONS.map((section) => {
-        const isActive = section.id === active;
-        return (
-          <motion.button key={section.id} onClick={() => setActive(section.id)} whileHover={{ x: 2 }} style={{ width: "100%", textAlign: "left", cursor: "pointer", padding: "10px 14px", borderRadius: 12, background: isActive ? "var(--gold-dim)" : "transparent", border: `1px solid ${isActive ? "var(--gold-border)" : "transparent"}`, fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? "var(--gold)" : "var(--ink-3)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{section.label}</span>
-            {isActive && <span style={{ fontSize: 8, letterSpacing: ".2em", color: "var(--gold)", fontFamily: "var(--font-mono)" }}>EDITING</span>}
-          </motion.button>
-        );
-      })}
-    </div>
-  );
-}
-
-function JDPanel({ jd, setJd }) {
-  // BACKEND: extracted keywords should come from POST /resume/analyze-jd.
-  const keywords = ["Product strategy", "Experimentation", "0 to 1", "Analytics", "Cross-functional"];
-  return (
-    <Card style={{ padding: "28px 28px 24px" }}>
-      <div className="rv-header">
-        <div>
-          <span className="label" style={{ display: "block", marginBottom: 8 }}>Step 1 | Target role</span>
-          <h2 className="serif" style={{ fontSize: 22, fontWeight: 400, lineHeight: 1.25 }}>Paste the job description</h2>
-          <p style={{ marginTop: 6, fontSize: 13, color: "var(--ink-4)", lineHeight: 1.7 }}>Every tailoring decision starts here. The AI reads this to align your language, keywords, and evidence.</p>
-        </div>
-        <div className="rv-actions">
-          {/* BACKEND: POST /resume/analyze-jd returns structured JD analysis. */}
-          <Btn>Analyze</Btn>
-          {/* BACKEND: POST /resume/generate returns the first tailored draft. */}
-          <Btn solid>Generate</Btn>
-        </div>
-      </div>
-      <div style={{ borderRadius: 14, border: "1px solid var(--border)", background: "var(--cream)", padding: "16px 18px" }}>
-        <textarea value={jd} onChange={(event) => setJd(event.target.value)} rows={5} style={{ lineHeight: 1.75, color: "var(--ink-2)", fontSize: 13 }} placeholder="Paste job description..." />
-      </div>
-      <div style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 6 }}>
-        <span className="label" style={{ alignSelf: "center", marginRight: 4 }}>Extracted keywords</span>
-        {keywords.map((keyword) => <Pill key={keyword} variant="gold">{keyword}</Pill>)}
-      </div>
-    </Card>
-  );
-}
-
-function EditorPanel({ state, update, activeSection, setActiveSection }) {
-  const field = useMemo(() => ({
-    summary: { key: "summary", placeholder: "A sharp 3-line pitch: who you are, what you lead, and the outcomes you create.", helper: "Tie identity to the role. No generic opener." },
-    experience: { key: "experience", placeholder: "Impact-first bullets with scope, metrics, and business outcomes.", helper: "Prioritize the achievements most relevant to the JD." },
-    skills: { key: "skills", placeholder: "Add skills separated by |", helper: "Keep this role-specific. ATS reads this early." },
-    projects: { key: "projects", placeholder: "Projects that strengthen this version's story.", helper: "Only keep projects that matter for this role." },
-  }[activeSection]), [activeSection]);
-
-  return (
-    <Card style={{ padding: "28px" }}>
-      <div className="rv-header">
-        <div>
-          <span className="label" style={{ display: "block", marginBottom: 8 }}>Step 2 | Resume content</span>
-          <h2 className="serif" style={{ fontSize: 22, fontWeight: 400, lineHeight: 1.25 }}>Edit and refine</h2>
-          <p style={{ marginTop: 6, fontSize: 13, color: "var(--ink-4)", lineHeight: 1.7 }}>Sharpen the generated draft. Every field updates the live preview instantly.</p>
-        </div>
-      </div>
-
-      <div className="rv-identity">
-        {[{ label: "Full name", key: "fullName" }, { label: "Headline", key: "headline" }, { label: "Target role", key: "roleTitle" }, { label: "Target company", key: "targetCompany" }].map(({ label, key }) => (
-          <div key={key} style={{ padding: "12px 16px", borderRadius: 12, background: "var(--cream)", border: "1px solid var(--border)" }}>
-            <div className="label" style={{ marginBottom: 5 }}>{label}</div>
-            <input value={state[key]} onChange={(event) => update(key, event.target.value)} style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }} />
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "flex", gap: 4, margin: "14px 0", padding: "4px", background: "var(--cream-dim)", borderRadius: 12, border: "1px solid var(--border-2)", flexWrap: "wrap" }}>
-        {SECTIONS.map((section) => {
-          const isActive = section.id === activeSection;
-          return <motion.button key={section.id} onClick={() => setActiveSection(section.id)} layout style={{ flex: 1, minWidth: 120, padding: "7px 0", borderRadius: 9, background: isActive ? "var(--surface)" : "transparent", border: isActive ? "1px solid var(--border)" : "1px solid transparent", boxShadow: isActive ? "var(--shadow-sm)" : "none", fontSize: 12.5, fontWeight: isActive ? 600 : 400, color: isActive ? "var(--ink)" : "var(--ink-4)", cursor: "pointer" }}>{section.label}</motion.button>;
-        })}
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div key={activeSection} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
-          <div style={{ borderRadius: 14, border: "1px solid var(--border)", background: "var(--cream)", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid var(--border-2)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{field.helper}</span>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                {/* BACKEND: POST /resume/rewrite-section should accept section id + content. */}
-                {["Add metrics", "Sound more senior", "Shorten for ATS"].map((chip) => <Pill key={chip}>{chip}</Pill>)}
+                <div style={{ fontWeight: 700 }}>Core profile</div>
+                <div className="muted mini">This seeds every new tailored version.</div>
               </div>
             </div>
-            <textarea value={state[field.key]} onChange={(event) => update(field.key, event.target.value)} rows={8} style={{ display: "block", padding: "16px 18px", lineHeight: 1.8, fontSize: 13.5, color: "var(--ink-2)" }} placeholder={field.placeholder} />
-          </div>
-          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {/* BACKEND: POST /resume/rewrite-section returns rewritten content. */}
-            <Btn solid>Rewrite section</Btn>
-            {/* BACKEND: POST /resume/suggest-bullets returns bullet alternatives. */}
-            <Btn>Suggest bullets</Btn>
-            {/* BACKEND: POST /resume/check-ats returns ATS warnings. */}
-            <Btn>Check ATS</Btn>
-            <div style={{ marginLeft: "auto", display: "flex", gap: 5, flexWrap: "wrap" }}>
-              {["Tailor to JD", "Active voice"].map((chip) => <Pill key={chip}>{chip}</Pill>)}
+            <div className="two-col">
+              <div>
+                <span className="label">Full name</span>
+                <input value={profile.basics.fullName || ""} onChange={(e) => updateBasics("fullName", e.target.value)} />
+              </div>
+              <div>
+                <span className="label">Email</span>
+                <input value={profile.basics.email || ""} onChange={(e) => updateBasics("email", e.target.value)} />
+              </div>
+              <div>
+                <span className="label">Phone</span>
+                <input value={profile.basics.phone || ""} onChange={(e) => updateBasics("phone", e.target.value)} />
+              </div>
+              <div>
+                <span className="label">Location</span>
+                <input value={profile.basics.location || ""} onChange={(e) => updateBasics("location", e.target.value)} />
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    </Card>
-  );
-}
-
-function PreviewPanel({ state }) {
-  return (
-    <Card style={{ padding: "24px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-        <div>
-          <span className="label" style={{ display: "block", marginBottom: 6 }}>Step 3 | Live preview</span>
-          <h3 className="serif" style={{ fontSize: 18, fontWeight: 400 }}>Recruiter view</h3>
-        </div>
-        <Pill variant="green">ATS-safe</Pill>
-      </div>
-      <div style={{ borderRadius: 14, border: "1px solid var(--border)", background: "#fff", padding: "20px 20px 22px", boxShadow: "var(--shadow-sm)" }}>
-        <p style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 400 }}>{state.fullName}</p>
-        <p style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 5, lineHeight: 1.6 }}>{state.headline}</p>
-        <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--border-2)" }}>
-          {[{ label: "Summary", value: state.summary }, { label: "Experience", value: state.experience }, { label: "Skills", value: state.skills }, { label: "Projects", value: state.projects }].map((item) => (
-            <div key={item.label} style={{ marginBottom: 14 }}>
-              <span className="label" style={{ display: "block", marginBottom: 5 }}>{item.label}</span>
-              <p style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.75, whiteSpace: "pre-line" }}>{item.value}</p>
+            <div style={{ marginTop: 12 }}>
+              <span className="label">Headline</span>
+              <input value={profile.basics.headline || ""} onChange={(e) => updateBasics("headline", e.target.value)} />
             </div>
-          ))}
-        </div>
-      </div>
-      <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-        {/* BACKEND: POST /resume/versions/:id/save persists the current draft. */}
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ flex: 1, padding: "10px 0", borderRadius: 12, background: "var(--ink)", color: "var(--cream)", border: "none", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>Save version</motion.button>
-        {/* BACKEND: GET /resume/versions/:id/export returns PDF or DOCX. */}
-        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} style={{ padding: "10px 16px", borderRadius: 12, background: "transparent", color: "var(--ink-3)", border: "1px solid var(--border)", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>PDF</motion.button>
-      </div>
-    </Card>
-  );
-}
-
-function ScorecardPanel({ activeVersion }) {
-  // BACKEND: replace with fit analysis response for the selected version.
-  const metrics = [
-    { label: "ATS fit", value: `${activeVersion.fit}%`, color: activeVersion.fit >= 90 ? "var(--green)" : "var(--gold)" },
-    { label: "Evidence strength", value: "8.9 / 10", color: "var(--gold)" },
-    { label: "Narrative clarity", value: "Strong", color: "var(--green)" },
-    { label: "Keyword density", value: "High", color: "var(--green)" },
-  ];
-  return (
-    <Card style={{ padding: "22px 24px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-        <ScoreRing value={activeVersion.fit} />
-        <div>
-          <span className="label" style={{ display: "block", marginBottom: 4 }}>Scorecard</span>
-          <h3 style={{ fontSize: 15, fontWeight: 600 }}>Version quality</h3>
-          <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 2 }}>vs {activeVersion.company} JD</p>
-        </div>
-      </div>
-      <div className="rv-scorecard">
-        {metrics.map((metric) => <div key={metric.label} style={{ padding: "11px 13px", borderRadius: 12, background: "var(--cream)", border: "1px solid var(--border-2)" }}><div className="label" style={{ marginBottom: 4 }}>{metric.label}</div><div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color: metric.color }}>{metric.value}</div></div>)}
-      </div>
-    </Card>
-  );
-}
-
-function InsightsPanel() {
-  const iconColors = { gap: "var(--gold)", strong: "var(--green)", fix: "var(--red)" };
-  const bgColors = { gap: "var(--gold-dim)", strong: "var(--green-bg)", fix: "var(--red-bg)" };
-  return (
-    <Card style={{ padding: "22px 24px" }}>
-      <span className="label" style={{ display: "block", marginBottom: 10 }}>AI guidance</span>
-      <h3 className="serif" style={{ fontSize: 18, fontWeight: 400, marginBottom: 16 }}>What to improve</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {INSIGHTS.map((insight, i) => (
-          <motion.div key={insight.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.1 }} style={{ padding: "14px 15px", borderRadius: 14, background: bgColors[insight.type], border: `1px solid ${insight.type === "gap" ? "var(--gold-border)" : insight.type === "strong" ? "var(--green-border)" : "rgba(155,35,53,.18)"}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: iconColors[insight.type] }}>{insight.icon}</span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink-2)" }}>{insight.title}</span>
+            <div style={{ marginTop: 12 }}>
+              <span className="label">Target roles</span>
+              <input
+                value={(profile.targeting?.targetRoles || []).join(", ")}
+                onChange={(e) => updateTargeting("targetRoles", parseTags(e.target.value))}
+              />
             </div>
-            <p style={{ fontSize: 12.5, color: "var(--ink-3)", lineHeight: 1.65 }}>{insight.body}</p>
-          </motion.div>
-        ))}
-      </div>
-    </Card>
-  );
-}
+          </section>
 
-function AppKitPanel() {
-  // BACKEND: wire these actions to cover letter and interview-kit generation endpoints.
-  const items = ["Cover letter draft", "Interview question pack", "STAR story bank"];
-  return (
-    <div style={{ borderRadius: 20, background: "var(--ink-2)", border: "1px solid rgba(255,255,255,.06)", padding: "22px 24px", boxShadow: "var(--shadow-md)" }}>
-      <span className="label" style={{ color: "rgba(245,240,232,.62)" }}>Application kit</span>
-      <h3 className="serif" style={{ fontSize: 18, fontWeight: 400, color: "var(--cream)", marginTop: 6, marginBottom: 8 }}>Generate next</h3>
-      <p style={{ fontSize: 12.5, color: "rgba(245,240,232,.82)", lineHeight: 1.65, marginBottom: 16 }}>Once the resume is sharp, generate the full application kit from the same tailored story.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {items.map((item) => (
-          <motion.button key={item} whileHover={{ x: 3 }} style={{ width: "100%", textAlign: "left", padding: "11px 14px", borderRadius: 12, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.09)", color: "rgba(245,240,232,.96)", fontSize: 12.5, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>{item}</span>
-            <span>{">"}</span>
-          </motion.button>
-        ))}
+          <section className="card" style={{ padding: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <LayoutTemplate size={18} />
+              <div>
+                <div style={{ fontWeight: 700 }}>Template system</div>
+                <div className="muted mini">Switch layouts without rewriting resume data.</div>
+              </div>
+            </div>
+            <div className="template-grid">
+              {templates.map((template) => {
+                const selected = template.id === activeVersion.templateId;
+                return (
+                  <button
+                    key={template.id}
+                    className={`template-card ${selected ? "active" : ""}`}
+                    onClick={() =>
+                      patchVersion((current) => ({
+                        ...current,
+                        templateId: template.id,
+                        theme: {
+                          ...(current.theme || {}),
+                          accent: template.accent || current.theme?.accent || "#c2612d",
+                          density:
+                            template.id === "compact"
+                              ? "compact"
+                              : template.id === "executive"
+                                ? "comfortable"
+                                : "balanced",
+                        },
+                        layout: {
+                          ...(current.layout || {}),
+                          columns: template.id === "modern" ? 2 : 1,
+                          showSidebar: template.id === "modern",
+                          compact: template.id === "compact",
+                        },
+                      }))
+                    }
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                      <strong>{template.name}</strong>
+                      <span className="pill" style={{ background: `${template.accent}18`, color: template.accent }}>
+                        {template.previewTone}
+                      </span>
+                    </div>
+                    <div className="mini muted" style={{ lineHeight: 1.6 }}>{template.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Target size={18} />
+              <div>
+                <div style={{ fontWeight: 700 }}>Target job</div>
+                <div className="muted mini">Paste a JD, analyze it, then tailor this version against it.</div>
+              </div>
+            </div>
+            <div className="two-col">
+              <div>
+                <span className="label">Version title</span>
+                <input value={activeVersion.title || ""} onChange={(e) => updateVersionField("title", e.target.value)} />
+              </div>
+              <div>
+                <span className="label">Target company</span>
+                <input value={activeVersion.targetCompany || ""} onChange={(e) => updateVersionField("targetCompany", e.target.value)} />
+              </div>
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <span className="label">Target role</span>
+              <input value={activeVersion.targetRole || ""} onChange={(e) => updateVersionField("targetRole", e.target.value)} />
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <span className="label">Job description</span>
+              <textarea
+                value={activeVersion.jobDescription || ""}
+                onChange={(e) => updateVersionField("jobDescription", e.target.value)}
+                placeholder="Paste the job description here..."
+              />
+            </div>
+            {deferredKeywords.length > 0 && (
+              <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {deferredKeywords.map((keyword) => (
+                  <span key={keyword} className="pill">{keyword}</span>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="card" style={{ padding: 22 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>Tailored content</div>
+                <div className="muted mini">Edit the live version that gets analyzed and exported.</div>
+              </div>
+            </div>
+
+            {activeSection === "summary" && (
+              <div>
+                <span className="label">Professional summary</span>
+                <textarea
+                  value={activeVersion.sections.summary || ""}
+                  onChange={(e) => updateSection("summary", e.target.value)}
+                />
+              </div>
+            )}
+
+            {activeSection === "skills" && (
+              <div>
+                <span className="label">Skills</span>
+                <textarea
+                  value={joinLines(activeVersion.sections.skills)}
+                  onChange={(e) => updateSection("skills", parseLines(e.target.value))}
+                  placeholder="One skill per line"
+                />
+              </div>
+            )}
+
+            {activeSection === "certifications" && (
+              <div>
+                <span className="label">Certifications</span>
+                <textarea
+                  value={joinLines(activeVersion.sections.certifications)}
+                  onChange={(e) => updateSection("certifications", parseLines(e.target.value))}
+                  placeholder="One certification per line"
+                />
+              </div>
+            )}
+
+            {activeSection === "experience" && (
+              <div className="stack">
+                {(activeVersion.sections.experience || []).map((item, index) => (
+                  <div key={`experience-${index}`} className="entry">
+                    <div className="two-col">
+                      <div>
+                        <span className="label">Company</span>
+                        <input value={item.company || ""} onChange={(e) => updateExperience(index, "company", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Title</span>
+                        <input value={item.title || ""} onChange={(e) => updateExperience(index, "title", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Location</span>
+                        <input value={item.location || ""} onChange={(e) => updateExperience(index, "location", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Dates</span>
+                        <input
+                          value={`${item.startDate || ""}${item.startDate || item.endDate ? " - " : ""}${item.current ? "Present" : item.endDate || ""}`}
+                          onChange={(e) => {
+                            const [startDate, endDate] = e.target.value.split(" - ");
+                            updateExperience(index, "startDate", startDate || "");
+                            updateExperience(index, "endDate", endDate || "");
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <span className="label">Scope</span>
+                      <textarea value={item.summary || ""} onChange={(e) => updateExperience(index, "summary", e.target.value)} />
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <span className="label">Impact bullets</span>
+                      <textarea
+                        value={joinLines(item.achievements)}
+                        onChange={(e) => updateExperience(index, "achievements", parseLines(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  className="btn"
+                  onClick={() => updateSection("experience", [...(activeVersion.sections.experience || []), emptyExperience()])}
+                >
+                  <Plus size={16} />
+                  Add experience
+                </button>
+              </div>
+            )}
+
+            {activeSection === "projects" && (
+              <div className="stack">
+                {(activeVersion.sections.projects || []).map((item, index) => (
+                  <div key={`project-${index}`} className="entry">
+                    <div className="two-col">
+                      <div>
+                        <span className="label">Project</span>
+                        <input value={item.name || ""} onChange={(e) => updateProject(index, "name", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Link</span>
+                        <input value={item.link || ""} onChange={(e) => updateProject(index, "link", e.target.value)} />
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <span className="label">Summary</span>
+                      <textarea value={item.summary || ""} onChange={(e) => updateProject(index, "summary", e.target.value)} />
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <span className="label">Highlights</span>
+                      <textarea
+                        value={joinLines(item.highlights)}
+                        onChange={(e) => updateProject(index, "highlights", parseLines(e.target.value))}
+                      />
+                    </div>
+                    <div style={{ marginTop: 12 }}>
+                      <span className="label">Technologies</span>
+                      <input
+                        value={(item.technologies || []).join(", ")}
+                        onChange={(e) => updateProject(index, "technologies", parseTags(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <button
+                  className="btn"
+                  onClick={() => updateSection("projects", [...(activeVersion.sections.projects || []), emptyProject()])}
+                >
+                  <Plus size={16} />
+                  Add project
+                </button>
+              </div>
+            )}
+
+            {activeSection === "education" && (
+              <div className="stack">
+                {(activeVersion.sections.education || []).map((item, index) => (
+                  <div key={`education-${index}`} className="entry">
+                    <div className="two-col">
+                      <div>
+                        <span className="label">School</span>
+                        <input value={item.school || ""} onChange={(e) => updateEducation(index, "school", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Degree</span>
+                        <input value={item.degree || ""} onChange={(e) => updateEducation(index, "degree", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Field</span>
+                        <input value={item.field || ""} onChange={(e) => updateEducation(index, "field", e.target.value)} />
+                      </div>
+                      <div>
+                        <span className="label">Grade</span>
+                        <input value={item.grade || ""} onChange={(e) => updateEducation(index, "grade", e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  className="btn"
+                  onClick={() => updateSection("education", [...(activeVersion.sections.education || []), emptyEducation()])}
+                >
+                  <Plus size={16} />
+                  Add education
+                </button>
+              </div>
+            )}
+          </section>
+        </main>
+
+        <aside className="stack rail">
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>Fit score</div>
+                <div className="muted mini">{activeVersion.analysis?.fitLabel || "Awaiting analysis"}</div>
+              </div>
+              <div
+                style={{
+                  width: 76,
+                  height: 76,
+                  borderRadius: 24,
+                  background: tone.bg,
+                  color: tone.color,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 28,
+                  fontWeight: 700,
+                }}
+              >
+                {versionScore}
+              </div>
+            </div>
+            <div className="score">
+              {[
+                ["Keyword coverage", activeVersion.scorecard?.keywordCoverage || 0],
+                ["Impact", activeVersion.scorecard?.impactScore || 0],
+                ["Completeness", activeVersion.scorecard?.completenessScore || 0],
+                ["ATS", activeVersion.scorecard?.atsScore || 0],
+                ["Bullet quality", activeVersion.scorecard?.bulletQualityScore || 0],
+                ["Role fit", activeVersion.scorecard?.roleAlignmentScore || 0],
+              ].map(([label, value]) => (
+                <div key={label} className="score-card">
+                  <div className="mini muted">{label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Insights</div>
+            <div className="list">
+              {(activeVersion.insights || []).map((insight, index) => (
+                <div key={`${insight.title}-${index}`} className="entry" style={{ padding: 14 }}>
+                  <div className="pill" style={{ marginBottom: 10, background: insight.type === "strong" ? "rgba(20,108,67,.10)" : "rgba(194,97,45,.12)", color: insight.type === "strong" ? "#146c43" : "#c2612d" }}>
+                    {insight.type}
+                  </div>
+                  <div style={{ fontWeight: 700 }}>{insight.title}</div>
+                  <div className="muted mini" style={{ marginTop: 6, lineHeight: 1.6 }}>{insight.body}</div>
+                </div>
+              ))}
+              {(!activeVersion.insights || activeVersion.insights.length === 0) && (
+                <div className="muted mini">Run JD analysis to generate narrative diagnostics.</div>
+              )}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Template</div>
+            <div className="diag">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{activeTemplate?.name || "Classic"}</div>
+                  <div className="muted mini" style={{ marginTop: 4 }}>{activeTemplate?.description}</div>
+                </div>
+                <span className="pill" style={{ background: `${activeTemplate?.accent || "#c2612d"}18`, color: activeTemplate?.accent || "#c2612d" }}>
+                  {activeTemplate?.previewTone || "Default"}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Recommendations</div>
+            <div className="list">
+              {(activeVersion.analysis?.recommendations || []).map((item, index) => (
+                <div key={`${item}-${index}`} className="mini" style={{ lineHeight: 1.7 }}>
+                  {index + 1}. {item}
+                </div>
+              ))}
+              {(!activeVersion.analysis?.recommendations || activeVersion.analysis.recommendations.length === 0) && (
+                <div className="muted mini">The engine will surface rewrite guidance here.</div>
+              )}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Diagnostics</div>
+            <div className="list">
+              {(activeVersion.analysis?.diagnostics || []).map((item, index) => (
+                <div key={`${item.message}-${index}`} className="diag">
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <span
+                      className="pill"
+                      style={{
+                        background: item.severity === "warning" ? "rgba(183,121,31,.12)" : "rgba(20,18,16,.06)",
+                        color: item.severity === "warning" ? "#b7791f" : "#141210",
+                      }}
+                    >
+                      {item.section}
+                    </span>
+                    <span className="mini muted">{item.severity}</span>
+                  </div>
+                  <div className="mini" style={{ marginTop: 10, lineHeight: 1.7 }}>{item.message}</div>
+                  {item.bullet ? (
+                    <div className="mini muted" style={{ marginTop: 8, lineHeight: 1.6, fontStyle: "italic" }}>
+                      {item.bullet}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+              {(!activeVersion.analysis?.diagnostics || activeVersion.analysis.diagnostics.length === 0) && (
+                <div className="muted mini">Run analysis to surface duplicate, weak, and missing-proof signals.</div>
+              )}
+            </div>
+          </section>
+
+          <section className="card" style={{ padding: 20 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12 }}>Live preview</div>
+            <div className="preview-section">
+              <div style={{ fontFamily: '"Fraunces",serif', fontSize: 28 }}>{profile.basics.fullName}</div>
+              <div className="muted mini" style={{ marginTop: 6 }}>
+                {[profile.basics.email, profile.basics.phone, profile.basics.location].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+            <div className="preview-section">
+              <div className="label">Summary</div>
+              <div className="mini" style={{ lineHeight: 1.8 }}>{activeVersion.sections.summary || "No summary yet"}</div>
+            </div>
+            <div className="preview-section">
+              <div className="label">Layout</div>
+              <div className="mini muted">
+                {activeVersion.templateId || "classic"} · {activeVersion.layout?.columns || 1} column
+                {activeVersion.layout?.showSidebar ? " · sidebar" : ""}
+                {activeVersion.layout?.compact ? " · compact" : ""}
+              </div>
+            </div>
+            <div className="preview-section">
+              <div className="label">Skills</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {(activeVersion.sections.skills || []).slice(0, 12).map((skill) => (
+                  <span key={skill} className="pill">{skill}</span>
+                ))}
+              </div>
+            </div>
+            <div className="preview-section">
+              <div className="label">Experience bullets</div>
+              <div className="list">
+                {(activeVersion.sections.experience || [])
+                  .flatMap((item) => item.achievements || [])
+                  .slice(0, 4)
+                  .map((item, index) => (
+                    <div key={`${item}-${index}`} className="mini">{item}</div>
+                  ))}
+              </div>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );
 }
 
-function TopBar({ activeVersion }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rv-topbar">
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 500, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--gold)", padding: "3px 9px", borderRadius: 100, background: "var(--gold-dim)", border: "1px solid var(--gold-border)" }}>Resume Workspace</span>
-        </div>
-        <h1 className="serif" style={{ fontSize: "clamp(26px, 3vw, 36px)", fontWeight: 400, lineHeight: 1.15 }}>Build a resume that<br /><span style={{ fontStyle: "italic", color: "var(--ink-3)" }}>gets the interview.</span></h1>
-      </div>
-      <div className="rv-topbar-meta">
-        <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}><div className="label" style={{ marginBottom: 2 }}>Active version</div><div style={{ fontWeight: 600, fontSize: 13 }}>{activeVersion.name} | {activeVersion.company}</div></div>
-        <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--green-bg)", border: "1px solid var(--green-border)" }}><div className="label" style={{ marginBottom: 2, color: "var(--green)" }}>ATS fit</div><div style={{ fontWeight: 700, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--green)" }}>{activeVersion.fit}%</div></div>
-        <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--surface)", border: "1px solid var(--border)" }}><div className="label" style={{ marginBottom: 2 }}>Next action</div><div style={{ fontWeight: 600, fontSize: 12.5 }}>Rewrite experience</div></div>
-      </div>
-    </motion.div>
-  );
-}
-
-export default function Resume() {
-  const [activeVersionId, setActiveVersionId] = useState(1);
-  const [activeSection, setActiveSection] = useState("experience");
-  const [jd, setJd] = useState(INITIAL_JD);
-  const [state, setState] = useState(INITIAL_STATE);
-
-  const activeVersion = VERSIONS.find((version) => version.id === activeVersionId) || VERSIONS[0];
-
-  // BACKEND: replace local updates with save/autosave mutations when the API is ready.
-  const update = (key, value) => setState((current) => ({ ...current, [key]: value }));
-
-  return (
-    <div className="rv-root">
-      <Styles />
-      <div className="rv-shell">
-        <TopBar activeVersion={activeVersion} />
-        <div className="rv-grid">
-          <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45 }} className="rv-column">
-            <VersionSidebar activeId={activeVersionId} setActiveId={setActiveVersionId} />
-            <SectionNav active={activeSection} setActive={setActiveSection} />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.08 }} className="rv-column">
-            <JDPanel jd={jd} setJd={setJd} />
-            <EditorPanel state={state} update={update} activeSection={activeSection} setActiveSection={setActiveSection} />
-          </motion.div>
-          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.45, delay: 0.14 }} className="rv-column rv-right">
-            <PreviewPanel state={state} />
-            <ScorecardPanel activeVersion={activeVersion} />
-            <InsightsPanel />
-            <AppKitPanel />
-          </motion.div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+export default Resume;
