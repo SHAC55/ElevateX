@@ -1,28 +1,38 @@
 import api from "./api";
 
-// Start session
-export const startInterviewSession = async (data) => {
-  const res = await api.post("/interview/v1/start", data);
-  return res.data;
+export const getInterviewProfile = async () => {
+  const response = await api.get("/interview/profile");
+  return response.data;
 };
 
-// Send message
-export const sendInterviewMessage = async (sessionId, message) => {
-  const res = await api.post(`/interview/v1/${sessionId}/message`, { message });
-  return res.data;
+export const startInterviewSession = async (payload) => {
+  const response = await api.post("/interview/sessions/start", payload);
+  return response.data;
 };
 
-// Evaluate answer
-export const evaluateInterview = async (sessionId, question, answer) => {
-  const res = await api.post(`/interview/v1/${sessionId}/evaluate`, {
-    question,
+export const getInterviewSession = async (sessionId) => {
+  const response = await api.get(`/interview/sessions/${sessionId}`);
+  return response.data;
+};
+
+export const submitInterviewAnswer = async (sessionId, answer) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/answer`, {
     answer,
   });
-  return res.data;
+  return response.data;
 };
 
-// Complete session
-export const completeInterview = async (sessionId) => {
-  const res = await api.post(`/interview/v1/${sessionId}/complete`);
-  return res.data;
+export const completeInterviewSession = async (sessionId) => {
+  const response = await api.post(`/interview/sessions/${sessionId}/complete`);
+  return response.data;
+};
+
+export const getInterviewHistory = async () => {
+  const response = await api.get("/interview/sessions/history");
+  return response.data;
+};
+
+export const getInterviewAnalytics = async () => {
+  const response = await api.get("/interview/analytics");
+  return response.data;
 };
