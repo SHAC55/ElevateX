@@ -7,13 +7,18 @@ import * as learning from "../api/learning";
 const keyWithParams = (base, params = {}) => [base, params];
 
 export const queryKeys = {
+  dashboard: "learning:dashboard",
+  opsDashboard: "learning:ops-dashboard",
   modules: "learning:modules",
   module: (id) => ["learning:module", id],
   skills: "learning:skills",
   skill: (id) => ["learning:skill", id],
+  skillInsights: (id) => ["learning:skill:insights", id],
+  skillStart: (id) => ["learning:skill:start", id],
   topics: "learning:topics",
   topicsBySkill: (skillId) => ["learning:topics", { skillId }], // 👈 convenience helper
   topic: (id) => ["learning:topic", id],
+  topicMastery: (id) => ["learning:topic:mastery", id],
   tests: "learning:tests",
   test: (id) => ["learning:test", id],
 };
@@ -22,6 +27,24 @@ export function useModules(params = {}, options = {}) {
   return useQuery({
     queryKey: keyWithParams(queryKeys.modules, params),
     queryFn: () => learning.getModules(params),
+    ...options,
+  });
+}
+
+export function useLearningDashboard(options = {}) {
+  return useQuery({
+    queryKey: [queryKeys.dashboard],
+    queryFn: () => learning.getLearningDashboard(),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useLearningOpsDashboard(options = {}) {
+  return useQuery({
+    queryKey: [queryKeys.opsDashboard],
+    queryFn: () => learning.getLearningOpsDashboard(),
+    staleTime: 60_000,
     ...options,
   });
 }
@@ -40,6 +63,18 @@ export function useCreateModule() {
   return useMutation({
     mutationFn: learning.createModule,
     onSuccess: () => qc.invalidateQueries({ queryKey: [queryKeys.modules] }),
+  });
+}
+
+export function usePrecomputeModuleContent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (moduleId) => learning.precomputeModuleContent(moduleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [queryKeys.modules] });
+      qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+      qc.invalidateQueries({ queryKey: [queryKeys.topics] });
+    },
   });
 }
 
@@ -97,6 +132,16 @@ export function useSkill(skillId, options = {}) {
     queryKey: queryKeys.skill(skillId),
     queryFn: () => learning.getSkillById(skillId),
     enabled: !!skillId,
+    ...options,
+  });
+}
+
+export function useSkillInsights(skillId, options = {}) {
+  return useQuery({
+    queryKey: queryKeys.skillInsights(skillId),
+    queryFn: () => learning.getSkillInsights(skillId),
+    enabled: !!skillId,
+    staleTime: 30_000,
     ...options,
   });
 }
@@ -179,8 +224,35 @@ export function useSkillAIContent(skillId, options = {}) {
   return useQuery({
     queryKey: ["learning:skill:ai", skillId],
     queryFn: () => learning.getSkillAIContent(skillId),
-    enabled: !!skillId && (options.enabled ?? false),
+    enabled: !!skillId && (options.enabled ?? true),
     ...options,
+  });
+}
+
+export function useRegenerateSkillAIContent(skillId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => learning.regetSkillAIContent(skillId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["learning:skill:ai", skillId] });
+      qc.invalidateQueries({ queryKey: queryKeys.skill(skillId) });
+    },
+  });
+}
+
+export function useStartSkillFlow(skillId) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (incomingSkillId) => learning.startSkillFlow(incomingSkillId || skillId),
+    onSuccess: (_data, incomingSkillId) => {
+      const resolvedSkillId = incomingSkillId || skillId;
+      qc.invalidateQueries({ queryKey: queryKeys.skill(resolvedSkillId) });
+      qc.invalidateQueries({ queryKey: queryKeys.skillInsights(resolvedSkillId) });
+      qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+      qc.invalidateQueries({ queryKey: [queryKeys.topics] });
+      qc.invalidateQueries({ queryKey: [queryKeys.dashboard] });
+      qc.invalidateQueries({ queryKey: ["learning:skill:ai", resolvedSkillId] });
+    },
   });
 }
 
@@ -261,6 +333,30 @@ export function useTopicSummaryAI(topicId, options = {}) {
     queryFn: () => learning.getTopicSummaryAI(topicId),
     enabled: !!topicId && (options.enabled ?? false),
     ...options,
+  });
+}
+
+export function useTopicMasteryCheck(topicId, options = {}) {
+  return useQuery({
+    queryKey: queryKeys.topicMastery(topicId),
+    queryFn: () => learning.getTopicMasteryCheck(topicId),
+    enabled: !!topicId && (options.enabled ?? false),
+    ...options,
+  });
+}
+
+export function useSubmitTopicMasteryCheck() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ topicId, answers }) => learning.submitTopicMasteryCheck(topicId, answers),
+    onSuccess: (_data, { topicId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.topic(topicId) });
+      qc.invalidateQueries({ queryKey: queryKeys.topicMastery(topicId) });
+      qc.invalidateQueries({ queryKey: [queryKeys.topics] });
+      qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+      qc.invalidateQueries({ queryKey: [queryKeys.dashboard] });
+      qc.invalidateQueries({ queryKey: ["learning:skill:insights"] });
+    },
   });
 }
 
@@ -489,6 +585,7 @@ export function useUpsertTopicStatus() {
       }
       // optional: refresh skills to update any aggregate progress/status pills
       qc.invalidateQueries({ queryKey: [queryKeys.skills] });
+      qc.invalidateQueries({ queryKey: ["learning:skill:insights"] });
     },
   });
 }

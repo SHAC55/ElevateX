@@ -277,6 +277,9 @@ import SkillsToLearn from "./Pages/Learning/SkillsToLearn";
 import Communities from "./Pages/Learning/Communities";
 import CareerOutlook from "./Pages/Learning/CareerOutlook";
 import SkillDetailPage from "./Pages/Learning/SkillDetailsPage";
+import ReviewCenter from "./Pages/Learning/ReviewCenter";
+import LearningOps from "./Pages/Learning/LearningOps";
+import TopicStudyPage from "./Pages/Learning/TopicStudyPage";
 import SoldProduct from "./Pages/SoldProduct";
 import AddProductForm from "./Pages/AddProductForm";
 import { Toaster } from "react-hot-toast";
@@ -451,6 +454,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/career/plan/topics/:topicId"
+          element={
+            <ProtectedRoute>
+              <CareerLayout>
+                <TopicStudyPage />
+              </CareerLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* Marketplace extras */}
         <Route
@@ -491,9 +504,11 @@ const App = () => {
                   <Route path="projects" element={<PracticeProjects />} />
                   <Route path="resources" element={<LearningResources />} />
                   <Route path="progress" element={<ProgressTracker />} />
+                  <Route path="review" element={<ReviewCenter />} />
                   <Route path="roadmap/:moduleId" element={<Roadmap />} />
                   <Route path="communities" element={<Communities />} />
                   <Route path="outlook" element={<CareerOutlook />} />
+                  <Route path="ops" element={<LearningOps />} />
                   <Route
                     path="*"
                     element={<Navigate to="/career/plan" replace />}

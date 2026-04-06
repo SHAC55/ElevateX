@@ -4,9 +4,19 @@ export const getNotifications = async () => {
   return res.data;
 };
 
+export const syncLearningNotifications = async () => {
+  const res = await api.post("/notifications/sync-learning");
+  return res.data;
+};
+
 export const markAsRead = async (id) => {
   const res = await api.post(`/notifications/read/${id}`);
   return res.data;
+};
+
+export const markManyAsRead = async (ids = []) => {
+  const tasks = ids.filter(Boolean).map((id) => markAsRead(id));
+  return Promise.all(tasks);
 };
 
 export const archiveNotification = async (id) => {

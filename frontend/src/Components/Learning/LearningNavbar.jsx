@@ -92,14 +92,18 @@ const LearningNavbar = () => {
   const navItems = useMemo(
     () => [
       { to: "/career/plan/skills", label: "Skills", icon: <FaLightbulb /> },
+      { to: "/career/plan/overview", label: "Overview", icon: <FaMap /> },
       { to: "/career/plan/projects", label: "Projects", icon: <FaTasks /> },
       { to: "/career/plan/resources", label: "Resources", icon: <FaBook /> },
+      { to: "/career/plan/progress", label: "Progress", icon: <FaChartLine /> },
+      { to: "/career/plan/review", label: "Review", icon: <FaTasks /> },
       {
         to: "/career/plan/communities",
         label: "Communities",
         icon: <FaUsers />,
       },
       { to: "/career/plan/outlook", label: "Outlook", icon: <FaChartLine /> },
+      { to: "/career/plan/ops", label: "Ops", icon: <FaBars /> },
       { to: "/home", label: "Home", icon: <FaHome /> },
     ],
     [],
@@ -337,4 +341,3 @@ const LearningNavbar = () => {
 };
 
 export default LearningNavbar;
-

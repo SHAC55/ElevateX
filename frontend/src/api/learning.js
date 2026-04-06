@@ -63,6 +63,16 @@ export const getModuleById = async (moduleId) => {
   return res.data;
 };
 
+export const getLearningDashboard = async () => {
+  const res = await api.get("/learning/modules/dashboard");
+  return res.data;
+};
+
+export const getLearningOpsDashboard = async () => {
+  const res = await api.get("/learning/modules/ops");
+  return res.data;
+};
+
 // (Optional admin) create/update/delete
 export const createModule = async (payload) => {
   const res = await api.post("/learning/modules", payload);
@@ -74,6 +84,11 @@ export const updateModule = async (moduleId, payload) => {
 };
 export const deleteModule = async (moduleId) => {
   const res = await api.delete(`/learning/modules/${moduleId}`);
+  return res.data;
+};
+
+export const precomputeModuleContent = async (moduleId) => {
+  const res = await api.post(`/learning/modules/${moduleId}/precompute`);
   return res.data;
 };
 
@@ -94,11 +109,17 @@ export const getSkills = async (params = {}) => {
 
 // Skill detail
 export const getSkillById = async (skillId) => {
-  console.log("requesting ");
-
   const res = await api.get(`/learning/skills/${skillId}`);
-  console.log(res.data);
+  return res.data;
+};
 
+export const getSkillInsights = async (skillId) => {
+  const res = await api.get(`/learning/skills/${skillId}/insights`);
+  return res.data;
+};
+
+export const startSkillFlow = async (skillId) => {
+  const res = await api.post(`/learning/skills/${skillId}/start`);
   return res.data;
 };
 
@@ -122,7 +143,6 @@ export const upsertSkillProgress = async ({ skillId, progress, status }) => {
     progress,
     status,
   });
-  console.log(res.data);
   return res.data;
 };
 
@@ -133,7 +153,6 @@ export const upsertTopicProgress = async ({ topicId, progress, status }) => {
     progress,
     status,
   });
-  console.log("TopicProgress:", res.data);
   return res.data;
 };
 // Mark completed (if you add this endpoint later)
@@ -184,6 +203,18 @@ export const deleteTopic = async (topicId) => {
 // AI summary for a topic
 export const getTopicSummaryAI = async (topicId) => {
   const res = await api.get(`/learning/topics/${topicId}/summary`);
+  return res.data;
+};
+
+export const getTopicMasteryCheck = async (topicId) => {
+  const res = await api.get(`/learning/topics/${topicId}/mastery-check`);
+  return res.data;
+};
+
+export const submitTopicMasteryCheck = async (topicId, answers) => {
+  const res = await api.post(`/learning/topics/${topicId}/mastery-check/submit`, {
+    answers,
+  });
   return res.data;
 };
 

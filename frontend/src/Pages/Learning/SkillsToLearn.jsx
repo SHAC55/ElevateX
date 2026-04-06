@@ -1,808 +1,321 @@
-// import React, { useMemo, useState, useEffect, useCallback } from "react";
-// import { motion, AnimatePresence } from "framer-motion";
-// import {
-//   useModules,
-//   useSkills,
-//   useSkillAIContent,
-//   useBootstrapTopicsForSkill,
-//   useUpsertSkillProgress,
-//   useUpsertSkillStatus,
-//   useBootstrapSkillsFromPlan,
-// } from "../../hooks/useLearning";
-// import { useAuth } from "../../context/AuthContext";
-//
-// import ModulePicker from "../../Components/Learning/ModulePicker";
-// import SkillCard from "../../Components/Learning/SkillCard";
-// import EmptyState from "../../Components/Learning/EmptyState";
-// import StatusFilter from "../../Components/Learning/StatusFilter";
-// import SkillStudyModal from "../../Components/Learning/SkillStudyModal";
-//
-// // UI primitives
-// import { Button } from "../../Components/ui/Button";
-// import { Card, CardContent, CardHeader, CardTitle } from "../../Components/ui/Card";
-//
-// // New UI components
-// import LoadingSpinner from "../../Components/ui/LoadingSpinner";
-// import ProgressBar from "../../Components/ui/ProgressBar";
-// import { Tooltip, TooltipProvider } from "../../Components/ui/Tooltip";
-//
-// const getId = (v) => (typeof v === "string" ? v : v?._id || v?.toString?.() || "");
-// const MemoSkillCard = React.memo(SkillCard);
-//
-// // Animation variants
-// const containerVariants = {
-//   hidden: { opacity: 0 },
-//   visible: {
-//     opacity: 1,
-//     transition: {
-//       staggerChildren: 0.1,
-//       delayChildren: 0.3
-//     }
-//   }
-// };
-//
-// const itemVariants = {
-//   hidden: { y: 20, opacity: 0 },
-//   visible: {
-//     y: 0,
-//     opacity: 1,
-//     transition: {
-//       duration: 0.5,
-//       ease: "easeOut"
-//     }
-//   }
-// };
-//
-// const fadeIn = {
-//   hidden: { opacity: 0 },
-//   visible: {
-//     opacity: 1,
-//     transition: {
-//       duration: 0.6,
-//       ease: "easeOut"
-//     }
-//   }
-// };
-//
-// const slideUp = {
-//   hidden: { y: 30, opacity: 0 },
-//   visible: {
-//     y: 0,
-//     opacity: 1,
-//     transition: {
-//       duration: 0.7,
-//       ease: "easeOut"
-//     }
-//   }
-// };
-//
-// // pickNewestByTitle
-// const pickNewestByTitle = (modules = [], title = "") => {
-//   if (!Array.isArray(modules) || !title) return null;
-//   const candidates = modules.filter((m) => m?.title === title);
-//   if (!candidates.length) return null;
-//   const toDate = (x) => new Date(x || 0);
-//   return candidates.reduce((a, b) =>
-//     toDate(a?.updatedAt || a?.createdAt) > toDate(b?.updatedAt || b?.createdAt) ? a : b
-//   );
-// };
-//
-// const ToolbarSkeleton = () => (
-//   <motion.div
-//     className="flex flex-col sm:flex-row sm:items-center gap-3"
-//     variants={containerVariants}
-//     initial="hidden"
-//     animate="visible"
-//   >
-//     <motion.div variants={itemVariants} className="h-10 w-56 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
-//     <motion.div variants={itemVariants} className="h-10 w-64 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
-//     <motion.div variants={itemVariants} className="h-10 w-32 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
-//     <motion.div variants={itemVariants} className="h-10 w-40 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
-//   </motion.div>
-// );
-//
-// const GridSkeleton = ({ count = 4 }) => (
-//   <motion.div
-//     className="grid grid-cols-1 md:grid-cols-2 gap-4"
-//     variants={containerVariants}
-//     initial="hidden"
-//     animate="visible"
-//   >
-//     {Array.from({ length: count }).map((_, i) => (
-//       <motion.div key={i} variants={itemVariants}>
-//         <Card variant="elevated" className="overflow-hidden border-0 shadow-lg rounded-2xl">
-//           <CardContent className="p-6 space-y-4">
-//             <div className="h-5 w-1/2 bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
-//             <div className="h-4 w-1/3 bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
-//             <div className="h-3 w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
-//             <div className="h-3 w-5/6 bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
-//             <div className="h-9 w-40 bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl animate-pulse mt-4" />
-//           </CardContent>
-//         </Card>
-//       </motion.div>
-//     ))}
-//   </motion.div>
-// );
-//
-// export default function SkillsToLearn() {
-//   const { user } = useAuth();
-//   const currentUserId = user?.id;
-//
-//   const [selectedModuleId, setSelectedModuleId] = useState("");
-//   const [filter, setFilter] = useState("all");
-//   const [studySkillId, setStudySkillId] = useState(null);
-//   const [viewMode, setViewMode] = useState("grid"); // grid or list
-//
-//   // Modules: keep data, don't panic on focus, use sensible staleness
-//   const {
-//     data: modules = [],
-//     isLoading: modulesLoading,
-//     isFetching: modulesFetching,
-//     refetch: refetchModules,
-//   } = useModules(
-//     {},
-//     {
-//       staleTime: 60_000,
-//       keepPreviousData: true,
-//       refetchOnMount: false,
-//       refetchOnWindowFocus: false,
-//       refetchOnReconnect: true,
-//     }
-//   );
-//
-//   const selectedModuleTitle = useMemo(
-//     () => modules.find((m) => m._id === selectedModuleId)?.title || "",
-//     [modules, selectedModuleId]
-//   );
-//
-//   // Initial select / reselect when list changes
-//   useEffect(() => {
-//     if (!modules?.length) return;
-//     const stillExists = modules.some((m) => m._id === selectedModuleId);
-//
-//     if (!selectedModuleId || !stillExists) {
-//       let next = selectedModuleTitle ? pickNewestByTitle(modules, selectedModuleTitle) : null;
-//       if (!next) next = pickNewestByTitle(modules, "Foundation Skills");
-//       if (!next) {
-//         next = modules.reduce((a, b) =>
-//           new Date(a.updatedAt || a.createdAt || 0) > new Date(b.updatedAt || b.createdAt || 0) ? a : b
-//         );
-//       }
-//       if (next?._id && next._id !== selectedModuleId) setSelectedModuleId(next._id);
-//     } else if (selectedModuleTitle) {
-//       const newestSameTitle = pickNewestByTitle(modules, selectedModuleTitle);
-//       if (newestSameTitle && newestSameTitle._id !== selectedModuleId) {
-//         setSelectedModuleId(newestSameTitle._id);
-//       }
-//     }
-//   }, [modules, selectedModuleId, selectedModuleTitle]);
-//
-//   // Skills under current module: keep data and avoid UI thrash
-//   const {
-//     data: skills = [],
-//     isLoading: skillsLoading,
-//     isFetching: skillsFetching,
-//     refetch: refetchSkills,
-//   } = useSkills(
-//     { moduleId: selectedModuleId, userId: currentUserId },
-//     {
-//       enabled: !!selectedModuleId,
-//       staleTime: 60_000,
-//       keepPreviousData: true,
-//       refetchOnMount: false,
-//       refetchOnWindowFocus: false,
-//       refetchOnReconnect: true,
-//     }
-//   );
-//
-//   // Mutations (left here if you need them elsewhere)
-//   const { mutate: upsertProgress } = useUpsertSkillProgress();
-//   const { mutate: upsertSkillStatus } = useUpsertSkillStatus();
-//
-//   // Bootstrap sync from Career Plan
-//   const { mutateAsync: bootstrapAll, isPending: bootstrapping } = useBootstrapSkillsFromPlan();
-//
-//   // Generate topics for batch
-//   const { mutateAsync: generateTopicsForSkillBatch, isPending: batchGenerating } =
-//     useBootstrapTopicsForSkill();
-//
-//   const handleResyncFromPlan = async () => {
-//     try {
-//       await bootstrapAll({ mode: "sync" });
-//       const mods = await refetchModules();
-//       const modsList = mods?.data ?? modules;
-//
-//       const currentTitle = selectedModuleTitle || "Foundation Skills";
-//       const latestSameTitle =
-//         pickNewestByTitle(modsList || [], currentTitle) ||
-//         pickNewestByTitle(modsList || [], "Foundation Skills");
-//
-//       if (latestSameTitle?._id) setSelectedModuleId(latestSameTitle._id);
-//       await refetchSkills();
-//     } catch (e) {
-//       console.error("[FE] Resync failed:", e);
-//     }
-//   };
-//
-//   const handleGenerateAllTopics = async () => {
-//     if (!skills?.length) return;
-//     const jobs = skills.map((s) =>
-//       generateTopicsForSkillBatch({
-//         skillId: getId(s._id),
-//         difficulty: s.difficulty || "intermediate",
-//       })
-//     );
-//     await Promise.allSettled(jobs);
-//     await refetchSkills();
-//   };
-//
-//   // Study modal content
-//   const { data: studyContent, isLoading: studyLoading } = useSkillAIContent(studySkillId, {
-//     enabled: !!studySkillId,
-//   });
-//
-//   // Status counts for filter
-//   const statusCounts = useMemo(() => {
-//     const base = { all: skills.length, not_started: 0, in_progress: 0, completed: 0 };
-//     for (const s of skills) {
-//       const progress = s.progress ?? 0;
-//       const status =
-//         s.status ||
-//         (progress >= 100 ? "completed" : progress > 0 ? "in_progress" : "not_started");
-//       if (status in base) base[status] += 1;
-//     }
-//     return base;
-//   }, [skills]);
-//
-//   // Filter skills
-//   const filteredSkills = useMemo(() => {
-//     if (!skills?.length) return [];
-//     if (filter === "all") return skills;
-//     return skills.filter((s) => {
-//       const progress = s.progress ?? 0;
-//       const status =
-//         s.status ||
-//         (progress >= 100 ? "completed" : progress > 0 ? "in_progress" : "not_started");
-//       return status === filter;
-//     });
-//   }, [skills, filter]);
-//
-//   // Only show skeletons on first load, not background fetches
-//   const initialModulesLoading = modulesLoading && !modules.length;
-//   const initialSkillsLoading = !!selectedModuleId && skillsLoading && !skills.length;
-//   const showSkeleton = initialModulesLoading || initialSkillsLoading;
-//
-//   // Stable handler so memoized children don't re-render for fun
-//   const handleOpenStudy = useCallback((id) => setStudySkillId(id), []);
-//
-//   // Calculate overall progress for the selected module
-//   const moduleProgress = useMemo(() => {
-//     if (!skills.length) return 0;
-//     const totalProgress = skills.reduce((sum, skill) => sum + (skill.progress || 0), 0);
-//     return Math.round(totalProgress / skills.length);
-//   }, [skills]);
-//
-//   return (
-//     <motion.div
-//       initial={{ opacity: 0 }}
-//       animate={{ opacity: 1 }}
-//       transition={{ duration: 0.5 }}
-//       className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50/30 px-4 py-6 sm:px-6 lg:px-8"
-//     >
-//       <div className="max-w-7xl mx-auto">
-//         {/* Header */}
-//         <motion.div
-//           className="mb-8"
-//           variants={slideUp}
-//           initial="hidden"
-//           animate="visible"
-//         >
-//           <div className="flex items-center justify-between">
-//             <div>
-//               <motion.h1
-//                 className="text-3xl font-bold text-gray-900 tracking-tight font-serif"
-//                 variants={fadeIn}
-//               >
-//                 Skill Development
-//               </motion.h1>
-//               <motion.p
-//                 className="text-gray-600 mt-2 font-light"
-//                 variants={fadeIn}
-//                 transition={{ delay: 0.1 }}
-//               >
-//                 Master the skills that will advance your career
-//                 {selectedModuleTitle && (
-//                   <span className="font-medium text-indigo-600"> in {selectedModuleTitle}</span>
-//                 )}
-//               </motion.p>
-//             </div>
-//
-//             <AnimatePresence>
-//               {skills.length > 0 && (
-//                 <motion.div
-//                   initial={{ opacity: 0, x: 20 }}
-//                   animate={{ opacity: 1, x: 0 }}
-//                   transition={{ duration: 0.5, delay: 0.2 }}
-//                   className="hidden md:flex items-center bg-white/80 backdrop-blur-sm shadow-sm rounded-2xl px-5 py-3 space-x-4 border border-gray-200/60"
-//                 >
-//                   <span className="text-sm font-medium text-gray-700 uppercase tracking-wide font-sans">
-//                     Module Progress
-//                   </span>
-//                   <div className="flex-1 w-40">
-//                     <ProgressBar
-//                       value={moduleProgress}
-//                       className="h-2.5 rounded-full bg-gradient-to-r from-gray-200 to-gray-100"
-//                     />
-//                   </div>
-//                   <span className="text-lg font-bold text-indigo-600 min-w-[50px] font-mono">
-//                     {moduleProgress}%
-//                   </span>
-//                 </motion.div>
-//               )}
-//             </AnimatePresence>
-//           </div>
-//         </motion.div>
-//
-//         {/* Toolbar */}
-//         <motion.div
-//           className="relative z-40 bg-white/95 backdrop-blur-sm shadow-lg rounded-2xl p-6 mb-8 flex flex-wrap items-center gap-4 border border-gray-200/60"
-//           variants={slideUp}
-//           initial="hidden"
-//           animate="visible"
-//           transition={{ delay: 0.2 }}
-//         >
-//           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-//             <div className="flex-1 min-w-[240px] relative z-50">
-//               <ModulePicker
-//                 modules={modules || []}
-//                 value={selectedModuleId}
-//                 onChange={setSelectedModuleId}
-//               />
-//             </div>
-//
-//             <motion.div variants={itemVariants}>
-//               <StatusFilter value={filter} onChange={setFilter} counts={statusCounts} />
-//             </motion.div>
-//           </div>
-//
-//           <motion.div
-//             className="flex items-center gap-3 ml-auto"
-//             variants={containerVariants}
-//           >
-//             <motion.div variants={itemVariants} className="hidden sm:flex bg-gray-100 p-1.5 rounded-xl">
-//               <button
-//                 type="button"
-//                 onClick={() => setViewMode("grid")}
-//                 className={`p-2.5 rounded-lg transition-all ${
-//                   viewMode === "grid"
-//                     ? "bg-white shadow-md text-indigo-600"
-//                     : "text-gray-500 hover:text-gray-700"
-//                 }`}
-//               >
-//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-//                   <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-//                 </svg>
-//               </button>
-//               <button
-//                 type="button"
-//                 onClick={() => setViewMode("list")}
-//                 className={`p-2.5 rounded-lg transition-all ${
-//                   viewMode === "list"
-//                     ? "bg-white shadow-md text-indigo-600"
-//                     : "text-gray-500 hover:text-gray-700"
-//                 }`}
-//               >
-//                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-//                   <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-//                 </svg>
-//               </button>
-//             </motion.div>
-//
-//             <TooltipProvider>
-//               <motion.div variants={itemVariants}>
-//                 <Tooltip content="Refresh skills data">
-//                   <Button
-//                     size="sm"
-//                     variant="outline"
-//                     onClick={() => refetchSkills()}
-//                     className="rounded-full font-sans"
-//                   >
-//                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-//                     </svg>
-//                     Refresh
-//                   </Button>
-//                 </Tooltip>
-//               </motion.div>
-//             </TooltipProvider>
-//
-//             <TooltipProvider>
-//               <motion.div variants={itemVariants}>
-//                 <Tooltip content="Synchronize with your career plan">
-//                   <Button
-//                     size="sm"
-//                     onClick={handleResyncFromPlan}
-//                     loading={bootstrapping}
-//                     className="rounded-full font-sans"
-//                   >
-//                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-//                     </svg>
-//                     Sync Plan
-//                   </Button>
-//                 </Tooltip>
-//               </motion.div>
-//             </TooltipProvider>
-//
-//             <TooltipProvider>
-//               <motion.div variants={itemVariants}>
-//                 <Tooltip content="Generate learning topics for all skills">
-//                   <Button
-//                     size="sm"
-//                     onClick={handleGenerateAllTopics}
-//                     loading={batchGenerating}
-//                     className="rounded-full bg-gray-900 hover:bg-gray-800 text-white border-gray-900 font-sans"
-//                   >
-//                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-//                     </svg>
-//                     Generate All
-//                   </Button>
-//                 </Tooltip>
-//               </motion.div>
-//             </TooltipProvider>
-//           </motion.div>
-//
-//           <AnimatePresence>
-//             {(modulesFetching || skillsFetching) && (
-//               <motion.div
-//                 className="ml-auto text-xs text-gray-500 flex items-center font-sans"
-//                 initial={{ opacity: 0 }}
-//                 animate={{ opacity: 1 }}
-//                 exit={{ opacity: 0 }}
-//               >
-//                 <LoadingSpinner className="h-3 w-3 mr-1.5" />
-//                 Updating…
-//               </motion.div>
-//             )}
-//           </AnimatePresence>
-//         </motion.div>
-//
-//         {/* Content Area */}
-//         <AnimatePresence mode="wait">
-//           {showSkeleton ? (
-//             <motion.div
-//               key="skeleton"
-//               initial={{ opacity: 0 }}
-//               animate={{ opacity: 1 }}
-//               exit={{ opacity: 0 }}
-//               transition={{ duration: 0.3 }}
-//             >
-//               <GridSkeleton count={6} />
-//             </motion.div>
-//           ) : filteredSkills.length === 0 ? (
-//             <motion.div
-//               key="empty"
-//               initial={{ opacity: 0 }}
-//               animate={{ opacity: 1 }}
-//               exit={{ opacity: 0 }}
-//               transition={{ duration: 0.3 }}
-//             >
-//               <EmptyState
-//                 title={selectedModuleId ? "No skills found" : "Select a module to begin"}
-//                 description={
-//                   selectedModuleId
-//                     ? "Try changing filters or generating topics"
-//                     : "Choose a learning module from the dropdown"
-//                 }
-//                 action={selectedModuleId ? handleGenerateAllTopics : undefined}
-//                 actionLabel={selectedModuleId ? "Generate Topics" : undefined}
-//               />
-//             </motion.div>
-//           ) : (
-//             <motion.div
-//               key="content"
-//               initial={{ opacity: 0 }}
-//               animate={{ opacity: 1 }}
-//               exit={{ opacity: 0 }}
-//               transition={{ duration: 0.3 }}
-//             >
-//               {/* Progress Summary */}
-//               <motion.div
-//                 variants={slideUp}
-//                 initial="hidden"
-//                 animate="visible"
-//                 transition={{ delay: 0.3 }}
-//               >
-//                 <Card variant="elevated" className="mb-8 overflow-hidden border-0 relative z-0">
-//                   <CardHeader className="pb-3">
-//                     <CardTitle size="md" className="font-sans text-xl font-bold tracking-tight">
-//                       <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-//                         Module Progress Overview
-//                       </span>
-//                     </CardTitle>
-//                   </CardHeader>
-//                   <CardContent className="pt-0">
-//                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-//                       <div className="flex-1">
-//                         <div className="flex items-center justify-between mb-2">
-//                           <span className="text-sm font-medium text-gray-700 font-sans">Overall Completion</span>
-//                           <span className="text-sm font-semibold text-indigo-600 font-mono">{moduleProgress}%</span>
-//                         </div>
-//                         <ProgressBar
-//                           value={moduleProgress}
-//                           className="h-3 rounded-full bg-gradient-to-r from-gray-200 to-gray-100"
-//                         />
-//                       </div>
-//
-//                       <motion.div
-//                         className="grid grid-cols-3 gap-4 text-center"
-//                         variants={containerVariants}
-//                       >
-//                         <motion.div variants={itemVariants} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-//                           <div className="text-2xl font-bold text-gray-900 font-mono">{statusCounts.completed}</div>
-//                           <div className="text-xs text-gray-500 mt-1 font-sans uppercase tracking-wide">Completed</div>
-//                         </motion.div>
-//                         <motion.div variants={itemVariants} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-//                           <div className="text-2xl font-bold text-gray-900 font-mono">{statusCounts.in_progress}</div>
-//                           <div className="text-xs text-gray-500 mt-1 font-sans uppercase tracking-wide">In Progress</div>
-//                         </motion.div>
-//                         <motion.div variants={itemVariants} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-//                           <div className="text-2xl font-bold text-gray-900 font-mono">{statusCounts.not_started}</div>
-//                           <div className="text-xs text-gray-500 mt-1 font-sans uppercase tracking-wide">Not Started</div>
-//                         </motion.div>
-//                       </motion.div>
-//                     </div>
-//                   </CardContent>
-//                 </Card>
-//               </motion.div>
-//
-//               {/* Skills Grid */}
-//               <motion.div
-//                 className={`grid ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"} gap-6`}
-//                 variants={containerVariants}
-//                 initial="hidden"
-//                 animate="visible"
-//                 transition={{ delay: 0.4 }}
-//               >
-//                 {filteredSkills.map((skill, index) => (
-//                   <motion.div key={getId(skill._id)} variants={itemVariants}>
-//                     <MemoSkillCard
-//                       skill={skill}
-//                       viewMode={viewMode}
-//                       onStudy={() => handleOpenStudy(getId(skill._id))}
-//                     />
-//                   </motion.div>
-//                 ))}
-//               </motion.div>
-//             </motion.div>
-//           )}
-//         </AnimatePresence>
-//
-//         {/* Study Modal */}
-//         <SkillStudyModal
-//           skillId={studySkillId}
-//           content={studyContent}
-//           isLoading={studyLoading}
-//           isOpen={!!studySkillId}
-//           onClose={() => setStudySkillId(null)}
-//         />
-//       </div>
-//     </motion.div>
-//   );
-// }
-//
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { getModuleRoadmap } from "../../api/learning";
+import { useLearningDashboard, useModules, usePrecomputeModuleContent, useSkills, useStartSkillFlow } from "../../hooks/useLearning";
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  useModules,
-  useSkills,
-  useSkillAIContent,
-  useBootstrapTopicsForSkill,
-  useUpsertSkillProgress,
-  useUpsertSkillStatus,
-  useBootstrapSkillsFromPlan,
-} from "../../hooks/useLearning";
-import { useAuth } from "../../context/AuthContext";
+const progressBar = (value) => (
+  <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+    <div
+      className="h-full rounded-full bg-gradient-to-r from-sky-500 via-indigo-500 to-amber-400"
+      style={{ width: `${Math.max(0, Math.min(100, value || 0))}%` }}
+    />
+  </div>
+);
 
-import ModulePicker from "../../Components/Learning/ModulePicker";
-import SkillCard from "../../Components/Learning/SkillCard";
-import EmptyState from "../../Components/Learning/EmptyState";
-import StatusFilter from "../../Components/Learning/StatusFilter";
-import SkillStudyModal from "../../Components/Learning/SkillStudyModal";
-
-// UI primitives
-import { Button } from "../../Components/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../Components/ui/Card";
-
-import LoadingSpinner from "../../Components/ui/LoadingSpinner";
-import ProgressBar from "../../Components/ui/ProgressBar";
-import { Tooltip, TooltipProvider } from "../../Components/ui/Tooltip";
-
-const getId = (v) =>
-  typeof v === "string" ? v : v?._id || v?.toString?.() || "";
-const MemoSkillCard = React.memo(SkillCard);
-
-/* ================= ANIMATIONS ================= */
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+const moduleRank = (title = "") => {
+  const value = String(title).toLowerCase();
+  if (value.includes("foundation")) return 0;
+  if (value.includes("core")) return 1;
+  if (value.includes("intermediate")) return 2;
+  if (value.includes("technical")) return 3;
+  if (value.includes("advanced")) return 4;
+  if (value.includes("soft")) return 5;
+  return 6;
 };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { duration: 0.4 } },
+const skillRank = (skill = {}) => {
+  const difficulty = String(skill.difficulty || "").toLowerCase();
+  if (difficulty === "beginner") return 0;
+  if (difficulty === "intermediate") return 1;
+  if (difficulty === "advanced") return 2;
+  if (difficulty === "soft_skills") return 3;
+  return 4;
 };
-
-const slideUp = {
-  hidden: { y: 30, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
-};
-
-/* ================= HELPERS ================= */
-
-const pickNewestByTitle = (modules = [], title = "") => {
-  if (!modules.length || !title) return null;
-  const same = modules.filter((m) => m.title === title);
-  return same.reduce((a, b) =>
-    new Date(a.updatedAt || 0) > new Date(b.updatedAt || 0) ? a : b,
-  );
-};
-
-/* ================= PAGE ================= */
 
 export default function SkillsToLearn() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const currentUserId = user?.id;
-
   const [selectedModuleId, setSelectedModuleId] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [studySkillId, setStudySkillId] = useState(null);
-  const [viewMode, setViewMode] = useState("grid");
+  const [roadmap, setRoadmap] = useState(null);
+  const [selectedNeedMode, setSelectedNeedMode] = useState("default");
 
-  /* ---------- DATA ---------- */
-
-  const { data: modules = [], isLoading: modulesLoading } = useModules();
-  const { data: skills = [], isLoading: skillsLoading } = useSkills(
-    { moduleId: selectedModuleId, userId: currentUserId },
+  const { data: dashboard } = useLearningDashboard();
+  const { data: modules = [], isLoading: loadingModules } = useModules();
+  const { mutateAsync: precomputeModule, isPending: precomputing } = usePrecomputeModuleContent();
+  const { data: skills = [], isLoading: loadingSkills } = useSkills(
+    { moduleId: selectedModuleId },
     { enabled: !!selectedModuleId },
   );
+  const { mutateAsync: startSkillFlow, isPending: startingSkill } = useStartSkillFlow("shared");
 
-  /* ---------- AUTO SELECT MODULE ---------- */
+  const sortedModules = useMemo(
+    () =>
+      [...modules].sort((left, right) => {
+        const rankDiff = moduleRank(left.title) - moduleRank(right.title);
+        if (rankDiff !== 0) return rankDiff;
+        return String(left.title || "").localeCompare(String(right.title || ""));
+      }),
+    [modules],
+  );
 
   useEffect(() => {
-    if (!modules.length) return;
-    if (!selectedModuleId) {
-      setSelectedModuleId(modules[0]._id);
+    if (!selectedModuleId && sortedModules.length) {
+      setSelectedModuleId(sortedModules[0]._id);
     }
-  }, [modules, selectedModuleId]);
+  }, [sortedModules, selectedModuleId]);
 
-  /* ---------- COMPUTED ---------- */
+  useEffect(() => {
+    if (!selectedModuleId) return;
+    getModuleRoadmap(selectedModuleId).then(setRoadmap).catch(() => setRoadmap(null));
+  }, [selectedModuleId]);
 
-  const moduleProgress = useMemo(() => {
-    if (!skills.length) return 0;
-    return Math.round(
-      skills.reduce((s, k) => s + (k.progress || 0), 0) / skills.length,
-    );
-  }, [skills]);
+  const selectedModule = sortedModules.find((module) => String(module._id) === String(selectedModuleId));
+  const nextSkillId = roadmap?.meta?.nextSkillId;
+  const retryTopicIds = new Set((dashboard?.reviewCenter?.retryQueue || []).map((item) => String(item.skillId)));
+  const decayRiskSkillNames = new Set((dashboard?.reviewCenter?.decayRiskTopics || []).map((item) => String(item.skillName)));
+  const projectSkillSignals = new Set(
+    (dashboard?.projectQueue || []).flatMap((project) => (project.focusSkills || []).map((skill) => String(skill).toLowerCase())),
+  );
+  const availableModes = dashboard?.needModes || [];
 
-  const filteredSkills = useMemo(() => {
-    if (filter === "all") return skills;
-    return skills.filter((s) => s.status === filter);
-  }, [skills, filter]);
+  const needModeScore = (skill) => {
+    const name = String(skill.name || "").toLowerCase();
+    const moduleTitle = String(selectedModule?.title || "").toLowerCase();
+    switch (selectedNeedMode) {
+      case "interview_7d":
+        return (retryTopicIds.has(String(skill._id)) ? 40 : 0) + (skill.status === "in_progress" ? 20 : 0) + (skill.latestScore != null ? 100 - skill.latestScore : 10);
+      case "portfolio_project":
+        return (projectSkillSignals.has(name) ? 40 : 0) + (name.includes("project") ? 20 : 0) + (skill.status === "in_progress" ? 15 : 0) + (skill.progress || 0);
+      case "internship":
+        return (skill.difficulty === "beginner" ? 40 : 0) + (moduleTitle.includes("foundation") || moduleTitle.includes("core") ? 20 : 0) + (skill.status === "in_progress" ? 10 : 0);
+      case "revision_only":
+        return (decayRiskSkillNames.has(skill.name) ? 35 : 0) + (skill.status === "completed" ? 25 : 0) + (retryTopicIds.has(String(skill._id)) ? 20 : 0);
+      default:
+        return skill.isNext ? 50 : 0;
+    }
+  };
 
-  const showSkeleton = modulesLoading || skillsLoading;
-
-  /* ================= RENDER ================= */
+  const skillRows = useMemo(
+    () =>
+      [...skills]
+        .map((skill) => ({
+          ...skill,
+          isNext: String(skill._id) === String(nextSkillId),
+          latestScore: (dashboard?.reviewCenter?.retryQueue || []).find((item) => String(item.skillId) === String(skill._id))?.score ?? null,
+          modeScore: needModeScore({
+            ...skill,
+            isNext: String(skill._id) === String(nextSkillId),
+            latestScore: (dashboard?.reviewCenter?.retryQueue || []).find((item) => String(item.skillId) === String(skill._id))?.score ?? null,
+          }),
+        }))
+        .sort((left, right) => {
+          if (selectedNeedMode !== "default") {
+            const modeDiff = (right.modeScore || 0) - (left.modeScore || 0);
+            if (modeDiff !== 0) return modeDiff;
+          }
+          const orderDiff = (left.order ?? 0) - (right.order ?? 0);
+          if (orderDiff !== 0) return orderDiff;
+          const rankDiff = skillRank(left) - skillRank(right);
+          if (rankDiff !== 0) return rankDiff;
+          return String(left.name || "").localeCompare(String(right.name || ""));
+        }),
+    [skills, nextSkillId, selectedNeedMode, dashboard],
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen px-6 py-8 bg-gradient-to-br from-gray-50 to-indigo-50/30"
-    >
-      <div className="max-w-7xl mx-auto">
-        {/* ================= HEADER ================= */}
-        <motion.div variants={slideUp} initial="hidden" animate="visible">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Skill Development
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Master skills step-by-step within your selected module
-          </p>
-        </motion.div>
-
-        {/* ================= TOOLBAR ================= */}
-        <motion.div
-          className="mt-6 bg-white rounded-2xl shadow-lg p-6 flex flex-wrap gap-4 items-center"
-          variants={slideUp}
-          initial="hidden"
-          animate="visible"
-        >
-          <ModulePicker
-            modules={modules}
-            value={selectedModuleId}
-            onChange={setSelectedModuleId}
-          />
-
-          <StatusFilter value={filter} onChange={setFilter} />
-
-          {/* 👉 VIEW ROADMAP BUTTON (NEW) */}
-          <TooltipProvider>
-            <Tooltip content="View learning roadmap for this module">
-              <Button
-                size="sm"
-                disabled={!selectedModuleId || !skills.length}
-                onClick={() =>
-                  navigate(`/career/plan/roadmap/${selectedModuleId}`)
-                }
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full"
-              >
-                View Roadmap
-              </Button>
-            </Tooltip>
-          </TooltipProvider>
-
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-gray-600">Module Progress</span>
-            <ProgressBar value={moduleProgress} className="w-40 h-2" />
-            <span className="text-sm font-semibold text-indigo-600">
-              {moduleProgress}%
-            </span>
-          </div>
-        </motion.div>
-
-        {/* ================= CONTENT ================= */}
-        <AnimatePresence>
-          {showSkeleton ? (
-            <div className="mt-10 flex justify-center">
-              <LoadingSpinner />
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(251,191,36,0.18),_transparent_18%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="rounded-[36px] border border-slate-900 bg-slate-900 px-6 py-8 text-white">
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">Skill Command Center</div>
+              <h1 className="mt-4 text-5xl font-bold tracking-tight">Choose what to learn, then build proof</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                Nothing is locked now. You can open any module, start any skill based on your immediate need, and still use the AI roadmap as guidance instead of a gate.
+              </p>
             </div>
-          ) : filteredSkills.length === 0 ? (
-            <EmptyState
-              title="No skills found"
-              description="Try selecting another module"
-            />
-          ) : (
-            <motion.div
-              className={`mt-8 grid ${
-                viewMode === "grid"
-                  ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-                  : "grid-cols-1"
-              } gap-6`}
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {filteredSkills.map((skill) => (
-                <motion.div key={getId(skill._id)} variants={itemVariants}>
-                  <MemoSkillCard
-                    skill={skill}
-                    viewMode={viewMode}
-                    onStudy={() => setStudySkillId(getId(skill._id))}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Readiness</div>
+                <div className="mt-3 text-4xl font-bold">{dashboard?.summary?.readinessScore ?? 0}</div>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Current Pace</div>
+                <div className="mt-3 text-2xl font-bold capitalize">
+                  {String(dashboard?.summary?.pacingStatus || "unbounded").replace("_", " ")}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Skills Completed</div>
+                <div className="mt-3 text-4xl font-bold">{dashboard?.counts?.completedSkills ?? 0}</div>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Topics Completed</div>
+                <div className="mt-3 text-4xl font-bold">{dashboard?.counts?.completedTopics ?? 0}</div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* ================= STUDY MODAL ================= */}
-        <SkillStudyModal
-          skillId={studySkillId}
-          isOpen={!!studySkillId}
-          onClose={() => setStudySkillId(null)}
-        />
+        <div className="grid gap-6 lg:grid-cols-[0.33fr_0.67fr]">
+          <aside className="rounded-[30px] border border-slate-200 bg-white/92 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Learning Modules</div>
+            <div className="mt-5 space-y-3">
+              {loadingModules ? (
+                <div className="text-slate-600">Loading modules...</div>
+              ) : (
+                sortedModules.map((module) => (
+                  <button
+                    key={module._id}
+                    type="button"
+                    onClick={() => setSelectedModuleId(module._id)}
+                    className={`w-full rounded-[22px] border px-4 py-4 text-left transition ${
+                      String(module._id) === String(selectedModuleId)
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-slate-50 text-slate-800 hover:border-slate-400"
+                    }`}
+                  >
+                    <div className="font-semibold">{module.title}</div>
+                    <div className={`mt-1 text-sm ${String(module._id) === String(selectedModuleId) ? "text-slate-300" : "text-slate-600"}`}>
+                      {module.skillsCount || 0} skills
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+
+          <section className="space-y-6">
+            <div className="rounded-[30px] border border-slate-200 bg-white/92 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Module Snapshot</div>
+                  <h2 className="mt-2 text-3xl font-semibold text-slate-900">{selectedModule?.title || "Select a module"}</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {roadmap?.meta?.nextSkillLabel
+                      ? `Recommended next move: ${roadmap.meta.nextSkillLabel}. You can still start any skill in this module.`
+                      : "Pick any module and start from the skill that matches your need."}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  {selectedModuleId ? (
+                    <button
+                      onClick={() => precomputeModule(selectedModuleId)}
+                      className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700"
+                    >
+                      {precomputing ? "Preloading..." : "Preload AI Layer"}
+                    </button>
+                  ) : null}
+                  {selectedModuleId ? (
+                    <Link to={`/career/plan/roadmap/${selectedModuleId}`} className="rounded-full bg-gradient-to-r from-indigo-600 to-sky-500 px-5 py-3 text-sm font-semibold text-white">
+                      Open Full Roadmap
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-6">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Need-based mode</div>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {availableModes.map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setSelectedNeedMode(mode.id)}
+                      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                        selectedNeedMode === mode.id
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-300 bg-white text-slate-700"
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 max-w-3xl text-sm text-slate-600">
+                  {availableModes.find((mode) => mode.id === selectedNeedMode)?.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-slate-200 bg-white/92 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Skills You Can Start Anytime</div>
+              <div className="mt-5 space-y-4">
+                {loadingSkills ? (
+                  <div className="text-slate-600">Loading skills...</div>
+                ) : (
+                  skillRows.map((skill, index) => (
+                    <div
+                      key={skill._id}
+                      className="block rounded-[26px] border border-slate-200 bg-slate-50 px-5 py-5 text-slate-900 transition hover:border-slate-400"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-slate-900 text-sm font-bold text-white">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="text-2xl font-semibold">{skill.name}</div>
+                            <div className="mt-1 text-sm capitalize text-slate-600">
+                              {skill.difficulty.replace("_", " ")}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {skill.isNext ? (
+                            <div className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-800">
+                              Recommended
+                            </div>
+                          ) : null}
+                          {selectedNeedMode !== "default" && (skill.modeScore || 0) > 0 ? (
+                            <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+                              Need-ranked
+                            </div>
+                          ) : null}
+                          <div className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                            skill.status === "completed"
+                              ? "bg-emerald-600 text-white"
+                              : skill.status === "in_progress"
+                                ? "bg-amber-400 text-slate-950"
+                                : "bg-slate-900 text-white"
+                          }`}>
+                            {skill.status.replace("_", " ")}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4">{progressBar(skill.progress || 0)}</div>
+                      <div className="mt-2 text-sm text-slate-600">{skill.progress || 0}% mastery tracked</div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const response = await startSkillFlow(skill._id);
+                            const firstTopicId = response?.nextTopic?.id;
+                            const params = new URLSearchParams();
+                            params.set("session", "started");
+                            if (firstTopicId) {
+                              params.set("topic", firstTopicId);
+                            }
+                            navigate(`/career/plan/skills/${skill._id}?${params.toString()}`);
+                          }}
+                          disabled={startingSkill || skill.status === "completed"}
+                          className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {skill.status === "in_progress" ? "Continue skill" : skill.status === "completed" ? "Completed" : "Start skill"}
+                        </button>
+                        <Link
+                          to={`/career/plan/skills/${skill._id}`}
+                          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                        >
+                          View details
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

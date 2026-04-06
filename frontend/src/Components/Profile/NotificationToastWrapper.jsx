@@ -2,15 +2,17 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import { FaBell, FaTimes, FaUserPlus, FaUserCheck } from "react-icons/fa";
+import { FaBell, FaTimes, FaUserPlus, FaUserCheck, FaCompass } from "react-icons/fa";
 import { IoIosNotifications } from "react-icons/io";
+import { archiveNotification, markAsRead } from "../../api/notifications";
 
-const NotificationToast = ({ notification, onClose }) => {
+const NotificationToast = ({ notification, onClose, onOpen }) => {
   if (!notification) return null;
 
   const iconMap = {
     friend_request: <FaUserPlus className="text-blue-500" />,
     friend_accept: <FaUserCheck className="text-green-500" />,
+    learning_nudge: <FaCompass className="text-amber-500" />,
     default: <IoIosNotifications className="text-purple-500" />
   };
 
@@ -18,7 +20,7 @@ const NotificationToast = ({ notification, onClose }) => {
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl rounded-xl p-4 w-full flex items-start gap-3 pointer-events-auto relative overflow-hidden"
+      className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-2xl rounded-xl p-4 w-full flex items-start gap-3 pointer-events-auto relative overflow-hidden"
     >
       {/* Shine effect */}
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -35,12 +37,16 @@ const NotificationToast = ({ notification, onClose }) => {
 
       {/* Message content */}
       <div className="flex-1">
-        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-          {notification.type === "friend_request" &&
-            `${notification.fromUser?.username || "Someone"} sent you a friend request`}
-          {notification.type === "friend_accept" &&
-            `${notification.fromUser?.username || "Someone"} accepted your friend request`}
-        </p>
+        <button type="button" onClick={onOpen} className="block text-left">
+          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+            {notification.type === "friend_request" &&
+              `${notification.fromUser?.username || "Someone"} sent you a friend request`}
+            {notification.type === "friend_accept" &&
+              `${notification.fromUser?.username || "Someone"} accepted your friend request`}
+            {notification.type === "learning_nudge" &&
+              `${notification.data?.title || "Learning nudge"}: ${notification.data?.message || ""}`}
+          </p>
+        </button>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
   {notification.createdAt
     ? new Date(notification.createdAt).toLocaleTimeString([], {
@@ -67,6 +73,7 @@ const NotificationToast = ({ notification, onClose }) => {
 const NotificationToastWrapper = ({ latestNotification, clearToast, bellRef }) => {
   const [toastQueue, setToastQueue] = useState([]);
   const containerRef = useRef(document.createElement("div"));
+  const makeToastKey = (toast) => toast?._id || toast?.id || toast?.clientToastId;
 
   // Create portal container
   useEffect(() => {
@@ -105,14 +112,39 @@ const NotificationToastWrapper = ({ latestNotification, clearToast, bellRef }) =
     };
   }, []);
 
+  const handleResolveToast = async (toast, mode = "archive") => {
+    const toastKey = makeToastKey(toast);
+    try {
+      if (toast?._id) {
+        if (mode === "archive") {
+          await archiveNotification(toast._id);
+        } else {
+          await markAsRead(toast._id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to resolve notification toast", err);
+    } finally {
+      setToastQueue((prev) => prev.filter((t) => makeToastKey(t) !== toastKey));
+      clearToast?.(toastKey);
+    }
+  };
+
   // Add new notifications
   useEffect(() => {
     if (latestNotification) {
-      setToastQueue((prev) => [...prev, latestNotification]);
+      const normalizedToast = {
+        ...latestNotification,
+        clientToastId:
+          latestNotification?.clientToastId ||
+          latestNotification?._id ||
+          latestNotification?.id ||
+          `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      };
+      setToastQueue((prev) => [...prev, normalizedToast]);
       
       const timer = setTimeout(() => {
-        setToastQueue((prev) => prev.filter((t) => t._id !== latestNotification._id));
-        clearToast?.(latestNotification._id);
+        handleResolveToast(normalizedToast, "read");
       }, 8000);
 
       return () => clearTimeout(timer);
@@ -152,7 +184,7 @@ const NotificationToastWrapper = ({ latestNotification, clearToast, bellRef }) =
 
         return (
           <motion.div
-            key={toast._id}
+            key={makeToastKey(toast)}
             initial={{ 
               opacity: 0, 
               scale: 0.5, 
@@ -214,9 +246,14 @@ const NotificationToastWrapper = ({ latestNotification, clearToast, bellRef }) =
             
             <NotificationToast
               notification={toast}
-              onClose={() => {
-                setToastQueue((prev) => prev.filter((t) => t._id !== toast._id));
-                clearToast?.(toast._id);
+              onClose={() => handleResolveToast(toast, "archive")}
+              onOpen={async () => {
+                if (toast?.data?.link) {
+                  await handleResolveToast(toast, "archive");
+                  window.location.href = toast.data.link;
+                  return;
+                }
+                handleResolveToast(toast, "read");
               }}
             />
           </motion.div>

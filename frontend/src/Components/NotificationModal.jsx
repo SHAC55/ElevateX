@@ -197,11 +197,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import {
   getNotifications,
+  markAsRead,
+  markManyAsRead,
   archiveNotification,
   deleteNotification
 } from "../api/notifications";
-import { FaTrash, FaBell, FaBellSlash, FaCheckCircle } from "react-icons/fa";
+import { FaTrash, FaBell, FaBellSlash, FaCheckCircle, FaCompass } from "react-icons/fa";
 import { FaBoxArchive, FaCircleCheck } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
 
 const NotificationModal = ({ isOpen, onClose, socket }) => {
   const [activeNotis, setActiveNotis] = useState([]);
@@ -239,14 +242,20 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
   };
 
   const handleArchive = async (id) => {
-    await archiveNotification(id);
-    const toArchive = activeNotis.find((n) => n._id === id);
-    if (toArchive) {
-      setActiveNotis((prev) => prev.filter((n) => n._id !== id));
-      setArchivedNotis((prev) => [
-        ...prev,
-        { ...toArchive, status: "archived" }
-      ]);
+    try {
+      await archiveNotification(id);
+      const toArchive = activeNotis.find((n) => n._id === id);
+      if (toArchive) {
+        setActiveNotis((prev) => prev.filter((n) => n._id !== id));
+        setArchivedNotis((prev) => [
+          { ...toArchive, status: "archived" },
+          ...prev,
+        ]);
+      }
+      setExpandedId(null);
+    } catch (err) {
+      console.error("Failed to archive notification", err);
+      toast.error("Failed to dismiss notification");
     }
   };
 
@@ -261,15 +270,32 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
   };
 
   const handleMarkAllRead = async () => {
-    // This would be implemented in your API
-    // For now, we'll just clear the active notifications
     try {
-      // await markAllNotificationsRead();
-      setActiveNotis([]);
+      await markManyAsRead(activeNotis.map((n) => n._id));
+      setActiveNotis((prev) =>
+        prev.map((notification) => ({
+          ...notification,
+          status: "read",
+        })),
+      );
       toast.success("All notifications marked as read");
     } catch (err) {
       toast.error("Failed to mark all as read");
     }
+  };
+
+  const handleModalClose = async () => {
+    const unreadIds = activeNotis.filter((n) => n.status === "unread").map((n) => n._id);
+    if (unreadIds.length) {
+      try {
+        await markManyAsRead(unreadIds);
+        setActiveNotis((prev) => prev.map((n) => (unreadIds.includes(n._id) ? { ...n, status: "read" } : n)));
+      } catch (err) {
+        console.error("Failed to mark notifications as read on close", err);
+      }
+    }
+    setExpandedId(null);
+    onClose();
   };
 
   const toggleExpand = (id) => {
@@ -281,7 +307,11 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
 
     if (socket) {
       const handleSocketNotification = async (newNotification) => {
-        if (!newNotification._id) newNotification._id = Date.now().toString();
+        if (!newNotification._id) {
+          newNotification._id =
+            newNotification.id ||
+            `${newNotification?.type || "notification"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        }
 
         if (typeof newNotification.fromUser === "string") {
           try {
@@ -304,6 +334,38 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
     }
   }, [isOpen, socket]);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        handleModalClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, activeNotis]);
+
+  const getNotificationCopy = (notification) => {
+    if (notification.type === "friend_request") {
+      return {
+        title: `${notification.fromUser?.username || "Someone"} sent a friend request`,
+        body: "Tap below to accept, dismiss, or archive this request.",
+      };
+    }
+    if (notification.type === "friend_accept") {
+      return {
+        title: `${notification.fromUser?.username || "Someone"} accepted your request`,
+        body: `You are now connected with ${notification.fromUser?.username || "this user"}.`,
+      };
+    }
+    return {
+      title: notification.data?.title || "Learning nudge",
+      body: notification.data?.message || "A new learning nudge is ready for you.",
+    };
+  };
+
   const renderNotification = (n, fromArchived = false) => (
     <motion.div
       key={n._id}
@@ -321,23 +383,56 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
     >
       <div className="flex gap-3 items-start">
         <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-          ${n.type === "friend_request" ? "bg-blue-100 dark:bg-blue-900/50" : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
+          ${n.type === "friend_request"
+            ? "bg-blue-100 dark:bg-blue-900/50"
+            : n.type === "learning_nudge"
+              ? "bg-amber-100 dark:bg-amber-900/50"
+              : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
           {n.type === "friend_request" ? (
             <FaBell className="text-blue-500 dark:text-blue-400 text-xl" />
+          ) : n.type === "learning_nudge" ? (
+            <FaCompass className="text-amber-500 dark:text-amber-400 text-xl" />
           ) : (
             <FaCircleCheck className="text-emerald-500 dark:text-emerald-400 text-xl" />
           )}
         </div>
         
         <div className="flex-1">
-          <div className="flex justify-between items-start">
-            <h3 className="font-medium text-gray-800 dark:text-gray-200">
-              {n.type === "friend_request" && `${n.fromUser?.username || "Someone"} sent a friend request`}
-              {n.type === "friend_accept" && `${n.fromUser?.username || "Someone"} accepted your request`}
-            </h3>
-            <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-              {formatTime(n.createdAt)}
-            </span>
+          <div className="flex justify-between items-start gap-3">
+            <div>
+              <h3 className="font-medium text-gray-800 dark:text-gray-200">
+                {getNotificationCopy(n).title}
+              </h3>
+              {!fromArchived ? (
+                <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                  n.status === "unread" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                }`}>
+                  {n.status === "unread" ? "Unread" : "Seen"}
+                </span>
+              ) : (
+                <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                  Archived
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                {formatTime(n.createdAt)}
+              </span>
+              {!fromArchived ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleArchive(n._id);
+                  }}
+                  className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                  aria-label="Dismiss notification"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
           </div>
           
           {expandedId === n._id && (
@@ -347,11 +442,7 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
               className="pt-3 space-y-3"
             >
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                {n.type === "friend_request" ? (
-                  <p>Tap below to accept or decline this friend request</p>
-                ) : (
-                  <p>You are now friends with {n.fromUser?.username || "this user"}!</p>
-                )}
+                <p>{getNotificationCopy(n).body}</p>
               </div>
               
               <div className="flex gap-2 justify-end">
@@ -383,6 +474,28 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
                   <FaTrash className="text-sm" />
                   Delete
                 </motion.button>
+
+                {n.type === "learning_nudge" && n.data?.link && !fromArchived && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        if (n.status === "unread") {
+                          await markAsRead(n._id);
+                          setActiveNotis((prev) => prev.map((item) => (item._id === n._id ? { ...item, status: "read" } : item)));
+                        }
+                      } catch (err) {
+                        console.error("Failed to mark notification as read", err);
+                      }
+                      window.location.href = n.data.link;
+                    }}
+                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white rounded-lg text-sm flex items-center gap-1"
+                  >
+                    Open
+                  </motion.button>
+                )}
                 
                 {!fromArchived && (
                   <motion.button
@@ -416,6 +529,7 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={handleModalClose}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -423,6 +537,7 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="relative w-full max-w-lg h-[80vh] max-h-[700px]"
+            onClick={(event) => event.stopPropagation()}
           >
             {/* Animated Border */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-purple-600 via-blue-500 to-pink-500 animate-gradient-xy blur-lg opacity-70" />
@@ -441,7 +556,7 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
                   </h2>
                 </div>
                 <button
-                  onClick={onClose}
+                  onClick={handleModalClose}
                   className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 dark:bg-gray-800 dark:hover:bg-red-900/50 text-gray-500 hover:text-red-500 text-xl transition-all"
                 >
                   ×
