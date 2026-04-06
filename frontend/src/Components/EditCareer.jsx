@@ -1,138 +1,157 @@
-import React from 'react';
+import React from "react";
 import {
-  FaUserGraduate,
-  FaLightbulb,
-  FaLaptopCode,
-  FaGlobe,
-  FaBullseye,
-  FaClock,
-  FaCalendarCheck
-} from 'react-icons/fa';
+  AVAILABILITY_OPTIONS,
+  CAREER_ROLE_OPTIONS,
+  COLLABORATION_OPTIONS,
+  EDUCATION_OPTIONS,
+  EXPERIENCE_OPTIONS,
+  LEARNING_STYLE_OPTIONS,
+  MOTIVATION_OPTIONS,
+  RISK_OPTIONS,
+  SKILL_OPTIONS,
+  TIMELINE_OPTIONS,
+} from "../lib/careerProfile";
 
-const iconMap = {
-  interest: <FaLightbulb className="text-blue-600 text-xl mr-2" />,
-  skills: <FaLaptopCode className="text-blue-600 text-xl mr-2" />,
-  education: <FaUserGraduate className="text-blue-600 text-xl mr-2" />,
-  experience: <FaCalendarCheck className="text-blue-600 text-xl mr-2" />,
-  careergoal: <FaBullseye className="text-blue-600 text-xl mr-2" />,
-  timeconstraint: <FaClock className="text-blue-600 text-xl mr-2" />,
-  availabilty: <FaGlobe className="text-blue-600 text-xl mr-2" />
-};
+const chipClass = (active) =>
+  `rounded-full border px-3 py-2 text-sm transition ${
+    active
+      ? "border-slate-900 bg-slate-900 text-white"
+      : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+  }`;
 
-const questions = [
-  {
-    name: 'interest',
-    label: 'What kind of work excites you the most?',
-    options: [
-      'Building websites or apps',
-      'Designing visual experiences',
-      'Working with numbers & data',
-      'Communicating with people',
-      'Solving logical & technical problems',
-      'Writing or creating content',
-      'Deployment Operations',
-    ],
-  },
-  {
-    name: 'skills',
-    label: 'Which of these skills do you currently have or are learning?',
-    options: [
-      'JavaScript / React / Node.js',
-      'Python / ML / Data Science',
-      'UI/UX Design / Figma / Adobe XD',
-      'SQL / MongoDB / Databases',
-      'Public speaking / Communication',
-      'Writing or Blogging',
-      'Project Management',
-    ],
-  },
-  {
-    name: 'education',
-    label: 'What are you currently studying?',
-    options: ['B.E / B.tech', 'Bsc', 'Computer Science', 'Other / Not Enrolled'],
-  },
-  {
-    name: 'experience',
-    label: 'What is your experience level?',
-    options: [
-      'Internship',
-      'Freelance',
-      'Hackathon',
-      'Open-Source Contributor',
-      'Fresher',
-      'Beginner',
-    ],
-  },
-  {
-    name: 'careergoal',
-    label: 'What are you aiming for?',
-    options: [
-      'High paying job',
-      'Startup job',
-      'Freelance career',
-      'Goverment job',
-      'Study Abroad',
-      'MAANG Companies',
-    ],
-  },
-  {
-    name: 'timeconstraint',
-    label: 'Are you planning to?',
-    options: [
-      'Get a job in less than 6 Months',
-      'Prepare for job over the next year',
-      '2nd - 3rd year B.Tech Student',
-      'Still exploring options',
-      'Switching career',
-    ],
-  },
-  {
-    name: 'availabilty',
-    label: 'How much time can you dedicate weekly to learning/upskilling?',
-    options: [
-      '< 5 Hours',
-      '5 - 10 Hours',
-      '10 - 20 Hours',
-      '20 - 30 Hours',
-      'Dedicate as per requirement',
-    ],
-  },
-];
+const Section = ({ title, children }) => (
+  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+    <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+    <div className="mt-4">{children}</div>
+  </div>
+);
 
-const EditCareer = ({ formData, onChange }) => {
+const EditCareer = ({ formData, onFieldChange, onToggle }) => {
   return (
-    <div className="space-y-8 mt-4">
-      {questions.map((q) => (
-        <div key={q.name} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
-          <div className="flex items-center mb-3">
-            {iconMap[q.name]}
-            <h3 className="text-lg font-semibold text-gray-800">{q.label}</h3>
-          </div>
+    <div className="space-y-5">
+      <Section title="Career Direction">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Current role</span>
+            <input
+              value={formData.currentRole}
+              onChange={(event) => onFieldChange("currentRole", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            />
+          </label>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {q.options.map((option, idx) => (
-              <label
-                key={idx}
-                className={`flex items-center px-3 py-2 rounded-lg border hover:bg-blue-50 transition cursor-pointer ${
-                  formData[q.name] === option
-                    ? 'border-blue-500 bg-blue-50 text-blue-800 font-medium'
-                    : 'border-gray-300 text-gray-700'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name={q.name}
-                  value={option}
-                  checked={formData[q.name] === option}
-                  onChange={onChange}
-                  className="mr-3 accent-blue-600"
-                />
-                {option}
-              </label>
-            ))}
+          <div>
+            <span className="mb-2 block text-sm font-medium text-slate-700">Target roles</span>
+            <div className="flex flex-wrap gap-2">
+              {CAREER_ROLE_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={chipClass(formData.targetRoles.includes(option))}
+                  onClick={() => onToggle("targetRoles", option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      ))}
+      </Section>
+
+      <Section title="Skill Map">
+        <div className="flex flex-wrap gap-2">
+          {SKILL_OPTIONS.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={chipClass(formData.primarySkills.includes(option))}
+              onClick={() => onToggle("primarySkills", option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </Section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Section title="Constraints">
+          <div className="space-y-4">
+            <select
+              value={formData.education}
+              onChange={(event) => onFieldChange("education", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Education</option>
+              {EDUCATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select
+              value={formData.experience}
+              onChange={(event) => onFieldChange("experience", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Experience</option>
+              {EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select
+              value={formData.timeline}
+              onChange={(event) => onFieldChange("timeline", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Timeline</option>
+              {TIMELINE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select
+              value={formData.availability}
+              onChange={(event) => onFieldChange("availability", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Availability</option>
+              {AVAILABILITY_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </div>
+        </Section>
+
+        <Section title="Work Style DNA">
+          <div className="space-y-4">
+            <select
+              value={formData.learningStyle}
+              onChange={(event) => onFieldChange("learningStyle", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Learning style</option>
+              {LEARNING_STYLE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select
+              value={formData.collaborationStyle}
+              onChange={(event) => onFieldChange("collaborationStyle", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Collaboration style</option>
+              {COLLABORATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <select
+              value={formData.riskAppetite}
+              onChange={(event) => onFieldChange("riskAppetite", event.target.value)}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+            >
+              <option value="">Risk appetite</option>
+              {RISK_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+            </select>
+            <div className="flex flex-wrap gap-2">
+              {MOTIVATION_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={chipClass(formData.motivationDrivers.includes(option))}
+                  onClick={() => onToggle("motivationDrivers", option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Section>
+      </div>
     </div>
   );
 };

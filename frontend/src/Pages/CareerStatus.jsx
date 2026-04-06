@@ -34,6 +34,10 @@ import {
 import EditCareer from '../Components/EditCareer';
 import ResetCareer from '../Components/ResetCareer';
 import GlassyButton from '../Components/ui/GlassyButton';
+import {
+  buildCareerPayload,
+  createCareerProfileValues,
+} from '../lib/careerProfile';
 
 /* ----------------------------- Icon dictionary ---------------------------- */
 const iconMap = {
@@ -44,6 +48,8 @@ const iconMap = {
   careergoal: <FaBullseye className="text-rose-500 text-xl" />,
   timeconstraint: <FaClock className="text-indigo-500 text-xl" />,
   availabilty: <FaGlobe className="text-cyan-500 text-xl" />,
+  workstyle: <FaRocket className="text-slate-700 text-xl" />,
+  motivation: <FaChartLine className="text-emerald-600 text-xl" />,
 };
 
 /* ---------------------------- Small UI primitives ---------------------------- */
@@ -71,8 +77,9 @@ const CareerStatus = ({ refreshStatus }) => {
 
   const [status, setStatus] = useState(null);
   const [choice, setChoice] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(() => createCareerProfileValues());
   const [userName, setUserName] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -84,11 +91,12 @@ const CareerStatus = ({ refreshStatus }) => {
     try {
       const plan = await getCareerPlan();
       const usablePlan = {
-        skills: Array.isArray(plan.skills) && plan.skills.length > 1 ? plan.skills : plan?.raw?.skills || [],
-        roadmap: Array.isArray(plan.roadmap) && plan.roadmap.length > 0 ? plan.roadmap : plan?.raw?.roadmap || [],
+        skills: plan.skills ? Object.values(plan.skills).flat().filter(Boolean) : [],
+        roadmap: Array.isArray(plan.roadmap) && plan.roadmap.length > 0 ? plan.roadmap : [],
         projects: Array.isArray(plan.projects) && plan.projects.length > 0 ? plan.projects : plan?.raw?.projects || [],
-        resources: Array.isArray(plan.resources) && plan.resources.length > 0 ? plan.resources : plan?.raw?.resources || [],
+        resources: plan.resources ? Object.values(plan.resources).flat().filter(Boolean) : [],
         note: plan.note || '',
+        analytics: plan.analytics || null,
       };
       if (plan.generatedAt) setGeneratedAt(new Date(plan.generatedAt));
       setPlanInfo(usablePlan);
@@ -115,7 +123,8 @@ const CareerStatus = ({ refreshStatus }) => {
       setStatus(res.status);
       if (res.status === 'chosen') {
         setChoice(res.choice);
-        setFormData(res.choice);
+        setProfile(res.profile || null);
+        setFormData(createCareerProfileValues(res));
         if (res.user) setUserName(res.user);
       }
       setIsLoading(false);
@@ -139,15 +148,28 @@ const CareerStatus = ({ refreshStatus }) => {
     }
   };
 
-  const handleChange = e => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleToggle = (field, option) => {
+    setFormData((prev) => {
+      const current = prev[field] || [];
+      return {
+        ...prev,
+        [field]: current.includes(option)
+          ? current.filter((item) => item !== option)
+          : [...current, option],
+      };
+    });
   };
 
   const handleUpdate = async () => {
     try {
-      const res = await updateCareerChoice(formData);
+      const res = await updateCareerChoice(buildCareerPayload(formData));
       toast.success('Career choice updated!', { theme: 'colored' });
       setChoice(res.choice);
+      setProfile(res.profile || null);
       setEditMode(false);
     } catch {
       toast.error('Update failed', { theme: 'colored' });
@@ -218,6 +240,7 @@ const CareerStatus = ({ refreshStatus }) => {
                       <StatChip label="Skills" value={planInfo.skills.length || 0} tint="indigo" />
                       <StatChip label="Roadmap steps" value={planInfo.roadmap.length || 0} tint="violet" />
                       <StatChip label="Projects" value={planInfo.projects.length || 0} tint="fuchsia" />
+                      <StatChip label="Readiness" value={planInfo.analytics?.readinessScore ?? 'N/A'} tint="emerald" />
                     </div>
                     {generatedAt && (
                       <div className="mt-3 text-sm text-slate-500">
@@ -310,28 +333,74 @@ const CareerStatus = ({ refreshStatus }) => {
                         className="space-y-8"
                       >
                         {editMode ? (
-                          <EditCareer formData={formData} onChange={handleChange} />
+                          <EditCareer formData={formData} onFieldChange={handleFieldChange} onToggle={handleToggle} />
                         ) : (
                           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {Object.entries(choice).map(([key, value]) => {
-                              if (['_id', 'userId', '__v'].includes(key)) return null;
-                              const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                              return (
-                                <motion.div
-                                  key={key}
-                                  whileHover={{ y: -3 }}
-                                  className="flex flex-col p-6 rounded-xl border border-white/30 bg-white/70 backdrop-blur shadow-soft"
-                                >
-                                  <div className="flex items-center mb-4">
-                                    <div className="p-2 rounded-lg bg-white/80 border border-white/40 backdrop-blur">
-                                      {iconMap[key] || <FiUser className="w-6 h-6 text-indigo-400" />}
-                                    </div>
-                                    <h3 className="ml-3 text-sm font-medium text-slate-600">{label}</h3>
+                            {[
+                              {
+                                key: 'interest',
+                                label: 'Current Direction',
+                                value: profile?.userProfile?.careerVector?.currentRole || choice?.interest,
+                              },
+                              {
+                                key: 'careergoal',
+                                label: 'Target Roles',
+                                value: (profile?.userProfile?.careerVector?.targetRoles || []).join(', '),
+                              },
+                              {
+                                key: 'skills',
+                                label: 'Skill Graph',
+                                value: (profile?.userProfile?.skills || []).map((item) => item.name).join(', '),
+                              },
+                              {
+                                key: 'education',
+                                label: 'Education',
+                                value: choice?.education,
+                              },
+                              {
+                                key: 'experience',
+                                label: 'Experience',
+                                value: choice?.experience,
+                              },
+                              {
+                                key: 'timeconstraint',
+                                label: 'Timeline',
+                                value: choice?.timeconstraint,
+                              },
+                              {
+                                key: 'availabilty',
+                                label: 'Availability',
+                                value: choice?.availabilty,
+                              },
+                              {
+                                key: 'workstyle',
+                                label: 'Work Style DNA',
+                                value: [
+                                  profile?.userProfile?.workStyleDNA?.learningStyle,
+                                  profile?.userProfile?.workStyleDNA?.collaborationStyle,
+                                  profile?.userProfile?.workStyleDNA?.riskAppetite,
+                                ].filter(Boolean).join(' • '),
+                              },
+                              {
+                                key: 'motivation',
+                                label: 'Motivation Drivers',
+                                value: (profile?.userProfile?.workStyleDNA?.motivationDrivers || []).join(', '),
+                              },
+                            ].filter((item) => item.value).map(({ key, label, value }) => (
+                              <motion.div
+                                key={key}
+                                whileHover={{ y: -3 }}
+                                className="flex flex-col p-6 rounded-xl border border-white/30 bg-white/70 backdrop-blur shadow-soft"
+                              >
+                                <div className="flex items-center mb-4">
+                                  <div className="p-2 rounded-lg bg-white/80 border border-white/40 backdrop-blur">
+                                    {iconMap[key] || <FiUser className="w-6 h-6 text-indigo-400" />}
                                   </div>
-                                  <p className="text-lg font-semibold text-slate-900 truncate">{value}</p>
-                                </motion.div>
-                              );
-                            })}
+                                  <h3 className="ml-3 text-sm font-medium text-slate-600">{label}</h3>
+                                </div>
+                                <p className="text-lg font-semibold text-slate-900">{value}</p>
+                              </motion.div>
+                            ))}
                           </div>
                         )}
 
@@ -346,7 +415,7 @@ const CareerStatus = ({ refreshStatus }) => {
                                 variant="secondary"
                                 onClick={() => {
                                   setEditMode(false);
-                                  setFormData(choice);
+                                  setFormData(createCareerProfileValues({ choice, profile }));
                                 }}
                               >
                                 Cancel

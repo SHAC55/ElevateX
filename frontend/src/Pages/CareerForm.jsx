@@ -1,233 +1,305 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useNavigate } from 'react-router-dom';
-import { chooseCareer } from '../api/career';
-const questions = [
-  {
-    tag: 'STEP 1 : Know you better - Interest Mapping',
-    label: 'What kind of work excites you the most?',
-    name: 'interest',
-    type: 'mcq',
-    options: [
-      'Building websites or apps',
-      'Designing visual experiences',
-      'Working with numbers & data',
-      'Communicating with people',
-      'Solving logical & technical problems',
-      'Writing or creating content',
-      'Deployment Operations',
-    ],
-  },
-  {
-    tag: 'STEP 2 : Skills & Strengths',
-    label: 'Which of these skills do you currently have or are learning?',
-    name: 'skills',
-    type: 'mcq',
-    options: [
-      'JavaScript / React / Node.js',
-      'Python / ML / Data Science',
-      'UI/UX Design / Figma / Adobe XD',
-      'SQL / MongoDB / Databases',
-      'Public speaking / Communication',
-      'Writing or Blogging',
-      'Project Management',
-    ],
-  },
-  {
-    tag: 'STEP 3 : Education',
-    label: 'What are you currently studying?',
-    name: 'education',
-    type: 'mcq',
-    options: ['B.E / B.tech', 'Bsc', 'Computer Science', 'Other / Not Enrolled'],
-  },
-  {
-    tag: 'STEP 4 : Experience',
-    label: 'What is your experience level?',
-    name: 'experience',
-    type: 'mcq',
-    options: [
-      'Internship',
-      'Freelance',
-      'Hackathon',
-      'Open-Source Contributor',
-      'Fresher',
-      'Beginner',
-    ],
-  },
-  {
-    tag: 'STEP 5 : Career Goals',
-    label: 'What are you aiming for?',
-    name: 'careergoal',
-    type: 'mcq',
-    options: [
-      'High paying job',
-      'Startup job',
-      'Freelance career',
-      'Goverment job',
-      'Study Abroad',
-      'MAANG Companies',
-    ],
-  },
-  {
-    tag: 'STEP 6 : Time Constraints',
-    label: 'Are you planning to?',
-    name: 'timeconstraint',
-    type: 'mcq',
-    options: [
-      'Get a job in less than 6 Months',
-      'Prepare for job over the next year',
-      '2nd - 3rd year B.Tech Student',
-      'Still exploring options',
-      'Switching career',
-    ],
-  },
-  {
-    tag: 'STEP 7 : Availability',
-    label: 'How much time can you dedicate weekly to learning/upskilling?',
-    name: 'availabilty',
-    type: 'mcq',
-    options: [
-      '< 5 Hours',
-      '5 - 10 Hours',
-      '10 - 20 Hours',
-      '20 - 30 Hours',
-      'Dedicate as per requirement',
-    ],
-  },
-];
+import React, { useMemo, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
+import { chooseCareer } from "../api/career";
+import {
+  AVAILABILITY_OPTIONS,
+  CAREER_ROLE_OPTIONS,
+  COLLABORATION_OPTIONS,
+  EDUCATION_OPTIONS,
+  EXPERIENCE_OPTIONS,
+  LEARNING_STYLE_OPTIONS,
+  MOTIVATION_OPTIONS,
+  RISK_OPTIONS,
+  SKILL_OPTIONS,
+  TIMELINE_OPTIONS,
+  buildCareerPayload,
+  emptyCareerProfile,
+} from "../lib/careerProfile";
+
+const pillClass = (active) =>
+  `rounded-full border px-4 py-2 text-sm font-medium transition ${
+    active
+      ? "border-slate-900 bg-slate-900 text-white"
+      : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+  }`;
+
+const sectionCard =
+  "rounded-[28px] border border-slate-200 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur";
 
 const CareerForm = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
+  const [values, setValues] = useState(() => emptyCareerProfile());
+  const [submitting, setSubmitting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    trigger,
-    formState: { errors },
-  } = useForm({
-    mode: 'onTouched',
-    defaultValues: {
-      interest: '',
-      skills: '',
-      education: '',
-      experience: '',
-      careergoal: '',
-      timeconstraint: '',
-      availabilty: '',
-    },
-  });
+  const missingRequired = useMemo(() => {
+    const missing = [];
+    if (!values.currentRole.trim()) missing.push("current role");
+    if (!values.targetRoles.length) missing.push("target role");
+    if (!values.primarySkills.length) missing.push("skills");
+    if (!values.timeline) missing.push("timeline");
+    if (!values.availability) missing.push("availability");
+    return missing;
+  }, [values]);
 
-const onSubmit = async (data) => {
-  console.log('Form submitted:', data);
-
-  try {
-    const res = await chooseCareer(data);
-    toast.success('Career choice saved successfully! 🎉');
-    setTimeout(() => {
-      navigate('/career-os'); // 🔁 Redirect
-    }, 1500); // Optional delay for toast visibility
-  } catch (err) {
-    console.error(err);
-    toast.error(err?.response?.data?.message || 'Failed to save career choice.');
-  }
-};
-
-
-  const nextStep = async () => {
-    const valid = await trigger(questions[step].name);
-    if (valid) setStep((prev) => prev + 1);
+  const toggleArrayValue = (field, option) => {
+    setValues((prev) => {
+      const current = prev[field] || [];
+      const exists = current.includes(option);
+      return {
+        ...prev,
+        [field]: exists ? current.filter((item) => item !== option) : [...current, option],
+      };
+    });
   };
 
-  const prevStep = () => {
-    if (step > 0) setStep((prev) => prev - 1);
-  };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  const current = questions[step];
+    if (missingRequired.length) {
+      toast.error(`Missing: ${missingRequired.join(", ")}`);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const payload = buildCareerPayload(values);
+      await chooseCareer(payload);
+      toast.success("CareerOS profile saved");
+      navigate("/career-os");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Failed to save career profile");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className='w-full'>
-
-      <div className='ml-10 mr-10'>
-      <h1 className='text-4xl font-bold mt-4'>Shape Your Future in Tech with Smart Guidance</h1>
-      <h2 className='text-2xl font-serif'>Answer a few questions and discover the most suitable career path in tech based on your skills, interests, and goals.</h2>
-      </div>
-
-    <div className="m-4 mx-auto p-6 bg-white rounded-xl mt-8 ml-10 mr-10">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(251,191,36,0.18),_transparent_24%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-8 sm:px-6 lg:px-10">
       <ToastContainer />
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div>
-          <h1 className="bg-blue-50 p-2 font-bold text-2xl">{current.tag}</h1>
 
-          <label className="block text-2xl font-medium mb-2 mt-10 text-gray-800">
-            {current.label}
-          </label>
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 max-w-3xl">
+          <div className="inline-flex rounded-full border border-sky-200 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
+            CareerOS Intake
+          </div>
+          <h1 className="mt-5 font-serif text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            Build a living career profile, not a one-time form
+          </h1>
+          <p className="mt-4 text-lg leading-8 text-slate-600">
+            This profile feeds planning, analytics, resume strategy, interview prep, and weekly AI briefings.
+          </p>
+        </div>
 
-          {current.type === 'text' ? (
-            <input
-              type="text"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2"
-              {...register(current.name, {
-                required: 'This field is required',
-              })}
-            />
-          ) : (
-            <div className="space-y-2 mt-8">
-              {current.options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    value={option}
-                    {...register(current.name, {
-                      required: 'Please choose one option',
-                    })}
-                    className="accent-indigo-600"
-                  />
-                  <span className='text-xl text-gray-500 mt-2'>{option}</span>
-                </label>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className={sectionCard}>
+            <h2 className="text-2xl font-semibold text-slate-900">Career Direction</h2>
+            <p className="mt-2 text-sm text-slate-600">Tell us where you are now and where you want to go.</p>
+
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Current role or identity</span>
+                <input
+                  value={values.currentRole}
+                  onChange={(event) => setValues((prev) => ({ ...prev, currentRole: event.target.value }))}
+                  placeholder="Student builder, backend engineer, designer..."
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-900"
+                />
+              </label>
+
+              <div>
+                <span className="mb-2 block text-sm font-medium text-slate-700">Primary target roles</span>
+                <div className="flex flex-wrap gap-2">
+                  {CAREER_ROLE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => toggleArrayValue("targetRoles", option)}
+                      className={pillClass(values.targetRoles.includes(option))}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={sectionCard}>
+            <h2 className="text-2xl font-semibold text-slate-900">Skill Signal Map</h2>
+            <p className="mt-2 text-sm text-slate-600">Choose the abilities you can already leverage or learn fast.</p>
+
+            <div className="mt-6 flex flex-wrap gap-2">
+              {SKILL_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => toggleArrayValue("primarySkills", option)}
+                  className={pillClass(values.primarySkills.includes(option))}
+                >
+                  {option}
+                </button>
               ))}
             </div>
-          )}
+          </div>
 
-          {errors[current.name] && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors[current.name].message}
-            </p>
-          )}
-        </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className={sectionCard}>
+              <h2 className="text-2xl font-semibold text-slate-900">Constraints</h2>
+              <div className="mt-5 space-y-5">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Education</span>
+                  <select
+                    value={values.education}
+                    onChange={(event) => setValues((prev) => ({ ...prev, education: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select education</option>
+                    {EDUCATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
 
-        <div className="flex justify-between">
-          <button
-            type="button"
-            onClick={prevStep}
-            disabled={step === 0}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
-          >
-            Back
-          </button>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Experience</span>
+                  <select
+                    value={values.experience}
+                    onChange={(event) => setValues((prev) => ({ ...prev, experience: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select experience</option>
+                    {EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
 
-          {step < questions.length - 1 ? (
-            <button
-              type="button"
-              onClick={nextStep}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-            >
-              Next
-            </button>
-          ) : (
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Timeline to meaningful outcome</span>
+                  <select
+                    value={values.timeline}
+                    onChange={(event) => setValues((prev) => ({ ...prev, timeline: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select timeline</option>
+                    {TIMELINE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Availability</span>
+                  <select
+                    value={values.availability}
+                    onChange={(event) => setValues((prev) => ({ ...prev, availability: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select availability</option>
+                    {AVAILABILITY_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className={sectionCard}>
+              <h2 className="text-2xl font-semibold text-slate-900">Work Style DNA</h2>
+              <div className="mt-5 space-y-5">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Learning style</span>
+                  <select
+                    value={values.learningStyle}
+                    onChange={(event) => setValues((prev) => ({ ...prev, learningStyle: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select style</option>
+                    {LEARNING_STYLE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Collaboration style</span>
+                  <select
+                    value={values.collaborationStyle}
+                    onChange={(event) => setValues((prev) => ({ ...prev, collaborationStyle: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select style</option>
+                    {COLLABORATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Risk appetite</span>
+                  <select
+                    value={values.riskAppetite}
+                    onChange={(event) => setValues((prev) => ({ ...prev, riskAppetite: event.target.value }))}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                  >
+                    <option value="">Select risk level</option>
+                    {RISK_OPTIONS.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+
+                <div>
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Motivation drivers</span>
+                  <div className="flex flex-wrap gap-2">
+                    {MOTIVATION_OPTIONS.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => toggleArrayValue("motivationDrivers", option)}
+                        className={pillClass(values.motivationDrivers.includes(option))}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={sectionCard}>
+            <h2 className="text-2xl font-semibold text-slate-900">Optional Context</h2>
+            <div className="mt-5 grid gap-5 lg:grid-cols-2">
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Resume or background notes</span>
+                <textarea
+                  rows={8}
+                  value={values.resumeRaw}
+                  onChange={(event) => setValues((prev) => ({ ...prev, resumeRaw: event.target.value }))}
+                  placeholder="Paste resume summary, project history, internships, achievements..."
+                  className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Anything the AI should optimize around?</span>
+                <textarea
+                  rows={8}
+                  value={values.notes}
+                  onChange={(event) => setValues((prev) => ({ ...prev, notes: event.target.value }))}
+                  placeholder="Examples: need internship fast, want remote roles, want startup fit, weak in DSA..."
+                  className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-900"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start justify-between gap-4 rounded-[28px] border border-slate-900 bg-slate-900 px-6 py-5 text-white sm:flex-row sm:items-center">
+            <div>
+              <div className="text-sm uppercase tracking-[0.2em] text-slate-300">What happens next</div>
+              <p className="mt-2 max-w-2xl text-sm text-slate-200">
+                We will generate a strategic career plan, skill graph, roadmap, portfolio project stack, market signals, and analytics-ready readiness model.
+              </p>
+            </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={submitting}
+              className="rounded-full bg-amber-300 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Submit
+              {submitting ? "Saving profile..." : "Build My CareerOS"}
             </button>
-          )}
-        </div>
-      </form>
-    </div>
-
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

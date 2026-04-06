@@ -7,12 +7,20 @@ import { useParams } from "react-router-dom";
 export default function Roadmap() {
   const { moduleId } = useParams();
   const [data, setData] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    getModuleRoadmap(moduleId).then(setData);
+    getModuleRoadmap(moduleId).then(setData).catch(() => setError("Failed to load roadmap"));
   }, [moduleId]);
 
-  if (!data) return <div>Loading roadmap...</div>;
+  if (error) return <div className="p-6 text-rose-600">{error}</div>;
+  if (!data) return <div className="p-6 text-slate-600">Loading roadmap...</div>;
 
-  return <RoadmapCanvas data={data} />;
+  return (
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <RoadmapCanvas data={data} />
+      </div>
+    </div>
+  );
 }

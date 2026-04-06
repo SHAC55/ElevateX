@@ -20,10 +20,11 @@ import {
   FaProjectDiagram,
   FaBookOpen,
   FaChartLine,
-  FaExclamationTriangle,
   FaRoute,
   FaCheckCircle,
   FaRocket,
+  FaCompass,
+  FaBullseye,
 } from 'react-icons/fa';
 
 const Badge = ({ children }) => (
@@ -151,6 +152,10 @@ const CareerPlanPage = () => {
   const roadmap = getSection('roadmap');
   const projects = getSection('projects');
   const careerOutlook = plan.career_outlook || plan.raw?.career_outlook || null;
+  const analytics = plan.analytics || null;
+  const executiveSummary = plan.executiveSummary || null;
+  const jobSearchStrategy = plan.job_search_strategy || null;
+  const marketSignals = plan.market_signals || null;
 
   const handleStartJourney = async () => {
     if (journeyStarted) {
@@ -194,6 +199,67 @@ const CareerPlanPage = () => {
         </div>
 
         <div className="space-y-8">
+          {executiveSummary && (
+            <SectionCard icon={<FaCompass />} title="Strategic Readout">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Headline</div>
+                  <p className="mt-2 text-xl font-semibold text-slate-900">{executiveSummary.headline}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">{executiveSummary.opportunityNarrative}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Strategic Edge</div>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">{executiveSummary.strategicAdvantage}</p>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(executiveSummary.primaryConstraints || []).map((constraint, index) => (
+                      <li key={index}>• {constraint}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
+          {analytics && (
+            <SectionCard icon={<FaBullseye />} title="Career Analytics">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-indigo-200/50 bg-indigo-50/80 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Readiness Score</div>
+                  <div className="mt-3 text-4xl font-bold text-slate-900">{analytics.readinessScore}</div>
+                </div>
+                <div className="rounded-2xl border border-amber-200/50 bg-amber-50/80 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Execution Risk</div>
+                  <div className="mt-3 text-2xl font-bold capitalize text-slate-900">{analytics.executionRisk}</div>
+                </div>
+                <div className="rounded-2xl border border-emerald-200/50 bg-emerald-50/80 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Weeks To Ready</div>
+                  <div className="mt-3 text-4xl font-bold text-slate-900">{analytics.estimatedWeeksToMarketReady}</div>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-sm font-semibold text-slate-900">Strengths</div>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(analytics.strengths || []).map((item, index) => <li key={index}>• {item}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-sm font-semibold text-slate-900">Gaps</div>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(analytics.gaps || []).map((item, index) => <li key={index}>• {item}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-sm font-semibold text-slate-900">Momentum Levers</div>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(analytics.momentumLevers || []).map((item, index) => <li key={index}>• {item}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
           {skills.length > 0 && (
             <SectionCard icon={<FaTools />} title="Skills to Learn">
               <SkillsSection skills={skills} />
@@ -240,6 +306,60 @@ const CareerPlanPage = () => {
                       <li key={i}>• {trend}</li>
                     ))}
                   </ul>
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
+          {jobSearchStrategy && (
+            <SectionCard icon={<FaRocket />} title="Job Search System">
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-sm font-semibold text-slate-900">Execution Targets</div>
+                  <p className="mt-3 text-sm text-slate-600">
+                    {jobSearchStrategy.applicationTargetsPerWeek} targeted applications per week
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {jobSearchStrategy.networkingTouchesPerWeek} networking touches per week
+                  </p>
+                  <p className="mt-4 text-sm leading-6 text-slate-700">{jobSearchStrategy.portfolioPriority}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-sm font-semibold text-slate-900">Interview Focus Areas</div>
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {(jobSearchStrategy.interviewFocusAreas || []).map((item, index) => (
+                      <li key={index}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
+          {marketSignals && (
+            <SectionCard icon={<FaChartLine />} title="Market Signals">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Hiring Heat</div>
+                  <div className="mt-3 text-2xl font-bold capitalize text-slate-900">{marketSignals.hiringHeat}</div>
+                </div>
+                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 lg:col-span-2">
+                  <div className="text-sm font-semibold text-slate-900">Demand Drivers</div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(marketSignals.demandDrivers || []).map((item, index) => (
+                      <span key={index} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-5 text-sm font-semibold text-slate-900">Emerging Skills</div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(marketSignals.emergingSkills || []).map((item, index) => (
+                      <span key={index} className="rounded-full bg-slate-900 px-3 py-1 text-sm text-white">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </SectionCard>
