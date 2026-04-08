@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import ProductHeader from "../Components/ui/ProductHeader";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
@@ -14,8 +15,6 @@ const styles = `
   .mp-root .serif{font-family:var(--font-serif)}
   .mp-root ::-webkit-scrollbar{width:4px}.mp-root ::-webkit-scrollbar-track{background:transparent}.mp-root ::-webkit-scrollbar-thumb{background:var(--ink-5);border-radius:4px}
   .mp-shell{max-width:1600px;margin:0 auto;padding:0 28px 60px;position:relative;z-index:1}
-  .mp-topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 0 6px;border-bottom:1px solid var(--border);margin-bottom:28px}
-  .mp-topbar-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .mp-main{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
   .mp-column{display:flex;flex-direction:column;gap:16px}
   .mp-products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -23,7 +22,7 @@ const styles = `
   .mp-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-sm)}
   .mp-modal-backdrop{position:fixed;inset:0;background:rgba(15,14,12,.32);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:40}
   @media (max-width:1200px){.mp-main{grid-template-columns:1fr}.mp-products{grid-template-columns:repeat(2,minmax(0,1fr))}.mp-feature-grid{grid-template-columns:1fr}}
-  @media (max-width:820px){.mp-shell{padding:0 16px 40px}.mp-topbar{flex-direction:column;align-items:flex-start}.mp-products{grid-template-columns:1fr}}
+  @media (max-width:820px){.mp-shell{padding:0 16px 40px}.mp-products{grid-template-columns:1fr}}
 `;
 
 const categories = [
@@ -410,48 +409,47 @@ export default function Marketplace() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="mp-topbar"
+          style={{ marginBottom: 28 }}
         >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  color: "var(--gold)",
-                  padding: "3px 9px",
-                  borderRadius: 100,
-                  background: "var(--gold-dim)",
-                  border: "1px solid var(--gold-border)",
-                }}
-              >
-                Marketplace
-              </span>
-            </div>
-            <h1 className="serif" style={{ fontSize: "clamp(28px,3vw,38px)", fontWeight: 400, lineHeight: 1.08 }}>
-              Build the marketplace that
-              <br />
-              <span style={{ color: "var(--ink-3)", fontStyle: "italic" }}>actually feels premium.</span>
-            </h1>
-          </div>
-
-          <div className="mp-topbar-meta">
-            <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-sm)" }}>
-              <div className="label" style={{ marginBottom: 2 }}>Inventory</div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{products.length} curated products</div>
-            </div>
-            <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--green-bg)", border: "1px solid var(--green-border)" }}>
-              <div className="label" style={{ marginBottom: 2, color: "var(--green)" }}>Status</div>
-              <div style={{ fontWeight: 700, fontSize: 16, fontFamily: "var(--font-mono)", color: "var(--green)" }}>Frontend live</div>
-            </div>
-            <div style={{ padding: "10px 16px", borderRadius: 14, background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <div className="label" style={{ marginBottom: 2 }}>Next phase</div>
-              <div style={{ fontWeight: 600, fontSize: 12.5 }}>Payments and orders</div>
-            </div>
-          </div>
+          <ProductHeader
+            theme="light"
+            eyebrow="Marketplace"
+            title="Discover practical assets that strengthen how users learn, apply, and ship."
+            description="Browse curated digital products, keep seller actions close, and shape the marketplace around execution instead of clutter."
+            stats={[
+              {
+                label: "Inventory",
+                value: `${products.length}`,
+                detail: "Curated products in the current showcase.",
+              },
+              {
+                label: "Status",
+                value: "Live",
+                detail: "Frontend experience is available now.",
+              },
+              {
+                label: "Next Phase",
+                value: "Orders",
+                detail: "Payments and transaction flows come next.",
+              },
+              {
+                label: "Categories",
+                value: categories.length,
+                detail: "Focused browsing lanes for different needs.",
+              },
+            ]}
+            actions={[
+              {
+                label: "List a product",
+                onClick: () => navigate("/marketplace/addproduct"),
+              },
+              {
+                label: "My listings",
+                onClick: () => navigate("/marketplace/mylistedproduct"),
+                variant: "secondary",
+              },
+            ]}
+          />
         </motion.div>
 
         <div className="mp-main">

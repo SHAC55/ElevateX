@@ -280,11 +280,13 @@ import SkillDetailPage from "./Pages/Learning/SkillDetailsPage";
 import ReviewCenter from "./Pages/Learning/ReviewCenter";
 import LearningOps from "./Pages/Learning/LearningOps";
 import TopicStudyPage from "./Pages/Learning/TopicStudyPage";
+import TodayPage from "./Pages/Learning/TodayPage";
 import SoldProduct from "./Pages/SoldProduct";
 import AddProductForm from "./Pages/AddProductForm";
 import { Toaster } from "react-hot-toast";
 import UserListedProducts from "./Pages/UserListedProducts";
 import ProductDesc from "./Pages/ProductDesc";
+import { APP_NAVBAR_HEIGHT } from "./Components/SidebarNav";
 
 // --------------------- Layouts ---------------------
 
@@ -295,7 +297,10 @@ const SidebarLayout = ({ children }) => (
     <SidebarNav />
     <main
       className="flex-1 p-4"
-      style={{ marginTop: "64px", minHeight: "calc(100vh - 64px)" }}
+      style={{
+        marginTop: `${APP_NAVBAR_HEIGHT}px`,
+        minHeight: `calc(100vh - ${APP_NAVBAR_HEIGHT}px)`,
+      }}
     >
       {children}
     </main>
@@ -310,8 +315,8 @@ const InterviewLayout = ({ children }) => (
     <SidebarNav />
     <main
       style={{
-        marginTop: "64px",
-        height: "calc(100vh - 64px)",
+        marginTop: `${APP_NAVBAR_HEIGHT}px`,
+        height: `calc(100vh - ${APP_NAVBAR_HEIGHT}px)`,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -499,6 +504,7 @@ const App = () => {
               <CareerLayout>
                 <Routes>
                   <Route index element={<CareerPlanPage />} />
+                  <Route path="today" element={<TodayPage />} />
                   <Route path="overview" element={<CareerOverview />} />
                   <Route path="skills" element={<SkillsToLearn />} />
                   <Route path="projects" element={<PracticeProjects />} />

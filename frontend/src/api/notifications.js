@@ -15,8 +15,8 @@ export const markAsRead = async (id) => {
 };
 
 export const markManyAsRead = async (ids = []) => {
-  const tasks = ids.filter(Boolean).map((id) => markAsRead(id));
-  return Promise.all(tasks);
+  const res = await api.post("/notifications/read-many", { ids: ids.filter(Boolean) });
+  return res.data;
 };
 
 export const archiveNotification = async (id) => {

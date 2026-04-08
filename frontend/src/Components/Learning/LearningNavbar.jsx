@@ -1,30 +1,104 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  FaHome,
-  FaLightbulb,
-  FaMap,
-  FaTasks,
-  FaBook,
-  FaUsers,
-  FaChartLine,
-  FaBars,
-  FaTimes,
   FaBell,
-  FaUserCircle,
+  FaBook,
+  FaChartLine,
+  FaChevronRight,
+  FaCompass,
   FaGraduationCap,
+  FaHome,
+  FaProjectDiagram,
+  FaRegClock,
+  FaTimes,
+  FaUsers,
+  FaBars,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { getProfile } from "../../api/profile";
 import ProfileModal from "../ProfileModal";
 import NotificationModal from "../NotificationModal";
 import NotificationToastWrapper from "../Profile/NotificationToastWrapper";
 import { useNotificationSocket } from "../../hooks/useNotificationSocket";
 
-// Simple classNames utility
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-const HEADER_HEIGHT = 72; // Slightly increased for premium look
+const HEADER_HEIGHT = 88;
+
+const NAV_ITEMS = [
+  { to: "/career/plan/today", label: "Today", icon: <FaRegClock /> },
+  { to: "/career/plan", label: "Plan", icon: <FaCompass /> },
+  { to: "/career/plan/skills", label: "Skills", icon: <FaGraduationCap /> },
+  { to: "/career/plan/projects", label: "Projects", icon: <FaProjectDiagram /> },
+  { to: "/career/plan/resources", label: "Resources", icon: <FaBook /> },
+  { to: "/career/plan/progress", label: "Progress", icon: <FaChartLine /> },
+  { to: "/career/plan/communities", label: "Community", icon: <FaUsers /> },
+  { to: "/home", label: "Dashboard", icon: <FaHome /> },
+];
+
+const routeMeta = (pathname) => {
+  if (pathname.startsWith("/career/plan/today")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Today",
+      detail: "Your daily learning, review, build, and interview loop.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/skills")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Skills",
+      detail: "Pick what to study next and move immediately.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/projects")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Projects",
+      detail: "Turn progress into visible proof.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/resources")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Resources",
+      detail: "Use curated material instead of searching from scratch.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/progress")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Progress",
+      detail: "Track compounding effort and weak spots.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/communities")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Community",
+      detail: "Find peers, feedback, and accountability.",
+    };
+  }
+
+  if (pathname.startsWith("/career/plan/outlook")) {
+    return {
+      eyebrow: "Learning Workspace",
+      title: "Outlook",
+      detail: "See where the path is heading.",
+    };
+  }
+
+  return {
+    eyebrow: "Learning Workspace",
+    title: "Plan",
+    detail: "Your path, priorities, and next moves in one place.",
+  };
+};
 
 const LearningNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +109,7 @@ const LearningNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const bellRef = useRef(null);
 
   const {
     socket,
@@ -44,18 +119,15 @@ const LearningNavbar = () => {
     resetNotifications,
   } = useNotificationSocket();
 
-  const bellRef = useRef(null);
-
-  const toggleMenu = () => setIsOpen((v) => !v);
-
   useEffect(() => {
     let alive = true;
+
     (async () => {
       try {
         const res = await getProfile("me");
         if (alive) setProfile(res);
-      } catch (err) {
-        console.error("Failed to load profile", err);
+      } catch (error) {
+        console.error("Failed to load profile", error);
       }
     })();
 
@@ -67,20 +139,18 @@ const LearningNavbar = () => {
     };
   }, []);
 
-  // Add scroll effect for navbar
   useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 10;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 10);
 
     document.addEventListener("scroll", handleScroll);
-    return () => {
-      document.removeEventListener("scroll", handleScroll);
-    };
-  }, [scrolled]);
+    return () => document.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  const page = useMemo(() => routeMeta(location.pathname), [location.pathname]);
 
   const profileImage = useMemo(
     () =>
@@ -89,79 +159,54 @@ const LearningNavbar = () => {
     [profile],
   );
 
-  const navItems = useMemo(
-    () => [
-      { to: "/career/plan/skills", label: "Skills", icon: <FaLightbulb /> },
-      { to: "/career/plan/overview", label: "Overview", icon: <FaMap /> },
-      { to: "/career/plan/projects", label: "Projects", icon: <FaTasks /> },
-      { to: "/career/plan/resources", label: "Resources", icon: <FaBook /> },
-      { to: "/career/plan/progress", label: "Progress", icon: <FaChartLine /> },
-      { to: "/career/plan/review", label: "Review", icon: <FaTasks /> },
-      {
-        to: "/career/plan/communities",
-        label: "Communities",
-        icon: <FaUsers />,
-      },
-      { to: "/career/plan/outlook", label: "Outlook", icon: <FaChartLine /> },
-      { to: "/career/plan/ops", label: "Ops", icon: <FaBars /> },
-      { to: "/home", label: "Home", icon: <FaHome /> },
-    ],
-    [],
-  );
-
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
-
   return (
     <>
-      {/* Spacer so content isn't hidden under fixed header */}
       <div style={{ height: HEADER_HEIGHT }} aria-hidden="true" />
 
       <header
         className={cn(
-          "w-full fixed top-0 left-0 z-50 transition-all duration-300",
+          "fixed left-0 top-0 z-50 w-full transition-all duration-300",
           scrolled
-            ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-200/50"
-            : "bg-white/80 backdrop-blur-md border-b border-gray-200/30",
+            ? "border-b border-[#e7dac8] bg-[#fffaf2]/95 shadow-[0_18px_50px_rgba(76,54,28,0.12)] backdrop-blur-xl"
+            : "border-b border-[#eadfce]/70 bg-[#fffaf2]/88 backdrop-blur-lg",
         )}
-        role="banner"
       >
         <div
-          className=" mx-auto px-4 h-full flex items-center justify-between"
+          className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
           style={{ height: HEADER_HEIGHT }}
         >
-          {/* Brand - Left */}
           <button
-            className="flex items-center text-xl font-bold tracking-tight transition hover:opacity-90 group"
+            type="button"
             onClick={() => navigate("/career/plan")}
-            aria-label="Go to ElevateX Learning home"
+            className="flex min-w-0 items-center gap-3 text-left"
+            aria-label="Go to learning plan"
           >
-            <div className="relative p-1.5 mr-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg group-hover:scale-105 transition-transform">
-              <FaGraduationCap className="w-6 h-6 text-white" />
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[linear-gradient(135deg,#1f2937,#0f172a)] text-white shadow-[0_14px_30px_rgba(15,23,42,0.18)]">
+              <FaGraduationCap className="text-lg" />
             </div>
-            <span className="hidden sm:block bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              ElevateX <span className="text-indigo-600">Learning</span>
-            </span>
+            <div className="hidden min-w-0 sm:block">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8e775c]">
+                {page.eyebrow}
+              </div>
+              <div className="truncate text-lg font-semibold text-[#1f160f]">
+                ElevateX {page.title}
+              </div>
+              <div className="truncate text-sm text-[#6c5945]">{page.detail}</div>
+            </div>
           </button>
 
-          {/* Desktop Nav - Center */}
-          <nav
-            className="hidden lg:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2"
-            aria-label="Primary"
-          >
-            {navItems.map(({ to, label }) => (
+          <nav className="hidden xl:flex items-center rounded-full border border-[#e7dac8] bg-white/80 px-2 py-2 shadow-sm">
+            {NAV_ITEMS.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
+                end={to === "/career/plan"}
                 className={({ isActive }) =>
                   cn(
-                    "relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg mx-1",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
+                    "rounded-full px-4 py-2 text-sm font-medium transition",
                     isActive
-                      ? "text-indigo-700 bg-indigo-50/80"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50",
+                      ? "bg-[#1f160f] text-white shadow-sm"
+                      : "text-[#6c5945] hover:bg-[#f6eee1] hover:text-[#1f160f]",
                   )
                 }
               >
@@ -170,143 +215,100 @@ const LearningNavbar = () => {
             ))}
           </nav>
 
-          {/* Right Icons */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2">
             <button
               ref={bellRef}
+              type="button"
               onClick={() => setIsNotificationOpen(true)}
-              className="relative p-2.5 rounded-full text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="relative rounded-full border border-[#e7dac8] bg-white/80 p-3 text-[#5f4c39] transition hover:bg-[#f6eee1] hover:text-[#1f160f]"
               aria-label="Notifications"
-              aria-haspopup="dialog"
-              aria-expanded={isNotificationOpen ? "true" : "false"}
             >
-              <FaBell className="w-5 h-5" />
+              <FaBell className="text-base" />
               <AnimatePresence>
-                {notificationsCount > 0 && (
+                {notificationsCount > 0 ? (
                   <motion.span
                     key={notificationsCount}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 18 }}
-                    className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs min-w-[18px] h-[18px] flex items-center justify-center rounded-full"
-                    aria-label={`${notificationsCount} unread notifications`}
+                    transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                    className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#dc4c3f] px-1 text-[10px] font-semibold text-white"
                   >
                     {notificationsCount > 9 ? "9+" : notificationsCount}
                   </motion.span>
-                )}
+                ) : null}
               </AnimatePresence>
             </button>
 
-            {profile && user && (
+            {profile && user ? (
               <button
-                className="flex items-center gap-2 p-1.5 rounded-full hover:bg-gray-100/50 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                type="button"
+                className="hidden items-center gap-3 rounded-full border border-[#e7dac8] bg-white/80 py-1 pl-1 pr-3 transition hover:bg-[#f6eee1] md:flex"
                 onClick={() => setIsProfileOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={isProfileOpen ? "true" : "false"}
               >
-                <div className="relative">
-                  <img
-                    src={profileImage}
-                    alt={`${user?.username || "User"} avatar`}
-                    className="w-9 h-9 rounded-full object-cover border-2 border-white shadow-sm"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                <img
+                  src={profileImage}
+                  alt={`${user?.username || "User"} avatar`}
+                  className="h-10 w-10 rounded-full object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-[#1f160f]">{user?.username || "Profile"}</div>
+                  <div className="text-xs text-[#7a6550]">Account</div>
                 </div>
               </button>
-            )}
+            ) : null}
 
-            {/* Mobile Menu Toggle */}
             <button
-              className="lg:hidden p-2.5 rounded-full text-gray-600 hover:text-indigo-600 hover:bg-gray-100/50 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              onClick={toggleMenu}
+              type="button"
+              className="rounded-full border border-[#e7dac8] bg-white/80 p-3 text-[#5f4c39] transition hover:bg-[#f6eee1] hover:text-[#1f160f] xl:hidden"
+              onClick={() => setIsOpen((current) => !current)}
               aria-label="Toggle navigation menu"
-              aria-expanded={isOpen ? "true" : "false"}
-              aria-controls="mobile-nav"
             >
-              {isOpen ? (
-                <FaTimes className="w-5 h-5" />
-              ) : (
-                <FaBars className="w-5 h-5" />
-              )}
+              {isOpen ? <FaTimes /> : <FaBars />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Nav */}
         <AnimatePresence>
-          {isOpen && (
+          {isOpen ? (
             <motion.div
-              id="mobile-nav"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-xl"
+              className="overflow-hidden border-t border-[#e7dac8] bg-[#fffaf2] xl:hidden"
             >
-              <nav
-                className="flex flex-col gap-1 px-4 py-3"
-                aria-label="Mobile"
-              >
-                {navItems.map(({ to, label, icon }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 text-sm px-4 py-3 rounded-xl transition-all duration-300",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",
-                        isActive
-                          ? "bg-indigo-50 text-indigo-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-100/50",
-                      )
-                    }
-                  >
-                    <span className="text-indigo-600">{icon}</span>
-                    {label}
-                  </NavLink>
-                ))}
-
-                {/* Mobile notification and profile */}
-                <div className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-between px-4">
-                  <button
-                    onClick={() => setIsNotificationOpen(true)}
-                    className="flex items-center gap-3 text-sm text-gray-600 hover:text-indigo-600 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg px-3 py-2 hover:bg-gray-100/50"
-                  >
-                    <div className="relative">
-                      <FaBell className="w-5 h-5" />
-                      {notificationsCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-rose-500 text-white text-[10px] px-1">
-                          {notificationsCount > 9 ? "9+" : notificationsCount}
-                        </span>
-                      )}
-                    </div>
-                    Notifications
-                  </button>
-
-                  {profile && user && (
-                    <button
-                      onClick={() => setIsProfileOpen(true)}
-                      className="flex items-center gap-3 text-sm text-gray-600 hover:text-indigo-600 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg px-3 py-2 hover:bg-gray-100/50"
+              <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
+                <div className="grid gap-2">
+                  {NAV_ITEMS.map(({ to, label, icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={to === "/career/plan"}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition",
+                          isActive
+                            ? "border-[#1f160f] bg-[#1f160f] text-white"
+                            : "border-[#eadfce] bg-white text-[#5f4c39]",
+                        )
+                      }
                     >
-                      <img
-                        src={profileImage}
-                        alt="avatar"
-                        className="w-7 h-7 rounded-full object-cover border border-gray-300"
-                      />
-                      <span className="font-medium">{user?.username}</span>
-                    </button>
-                  )}
+                      <span className="flex items-center gap-3">
+                        <span>{icon}</span>
+                        {label}
+                      </span>
+                      <FaChevronRight className="text-xs" />
+                    </NavLink>
+                  ))}
                 </div>
-              </nav>
+              </div>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </header>
 
-      {/* Modals */}
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
@@ -329,7 +331,6 @@ const LearningNavbar = () => {
         socket={socket}
       />
 
-      {/* Toast Wrapper */}
       <NotificationToastWrapper
         bellRef={bellRef}
         notifications={[]}

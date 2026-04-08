@@ -1,341 +1,102 @@
-
-// import React, { useEffect, useState } from "react";
-// import { motion, AnimatePresence } from "framer-motion";
-// import { formatDistanceToNow } from "date-fns";
-// import {
-//   getNotifications,
-//   archiveNotification,
-//   deleteNotification
-// } from "../api/notifications";
-// import { FaTrash } from "react-icons/fa";
-// import { FaBoxArchive } from "react-icons/fa6";
-
-// const NotificationModal = ({ isOpen, onClose, socket }) => {
-//   const [activeNotis, setActiveNotis] = useState([]);
-//   const [archivedNotis, setArchivedNotis] = useState([]);
-
-//   // Helper: safe formatting
-//   const formatTime = (dateStr) => {
-//     try {
-//       return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
-//     } catch {
-//       return "";
-//     }
-//   };
-
-//   const loadNotifications = async () => {
-//     try {
-//       const data = await getNotifications();
-//       setActiveNotis(
-//         data.filter((n) => n.status !== "archived").map((n) => ({
-//           ...n,
-//           _id: n._id || Date.now().toString()
-//         }))
-//       );
-//       setArchivedNotis(
-//         data.filter((n) => n.status === "archived").map((n) => ({
-//           ...n,
-//           _id: n._id || Date.now().toString()
-//         }))
-//       );
-//     } catch (err) {
-//       console.error("Error fetching notifications", err);
-//     }
-//   };
-
-//   const handleArchive = async (id) => {
-//     await archiveNotification(id);
-//     const toArchive = activeNotis.find((n) => n._id === id);
-//     if (toArchive) {
-//       setActiveNotis((prev) => prev.filter((n) => n._id !== id));
-//       setArchivedNotis((prev) => [
-//         ...prev,
-//         { ...toArchive, status: "archived" }
-//       ]);
-//     }
-//   };
-
-//   const handleDelete = async (id, fromArchived = false) => {
-//     await deleteNotification(id);
-//     if (fromArchived) {
-//       setArchivedNotis((prev) => prev.filter((n) => n._id !== id));
-//     } else {
-//       setActiveNotis((prev) => prev.filter((n) => n._id !== id));
-//     }
-//   };
-
-//   useEffect(() => {
-//     if (isOpen) loadNotifications();
-
-//     if (socket) {
-//       const handleSocketNotification = async (newNotification) => {
-//         // Ensure _id exists
-//         if (!newNotification._id) newNotification._id = Date.now().toString();
-
-//         // Ensure fromUser is an object with username
-//         if (typeof newNotification.fromUser === "string") {
-//           try {
-//             const res = await fetch(`/api/users/${newNotification.fromUser}`);
-//             const userData = await res.json();
-//             newNotification.fromUser = userData;
-//           } catch {
-//             newNotification.fromUser = { username: "Someone" };
-//           }
-//         }
-
-//         setActiveNotis((prev) => [newNotification, ...prev]);
-//       };
-
-//       socket.on("notification", handleSocketNotification);
-
-//       return () => {
-//         socket.off("notification", handleSocketNotification);
-//       };
-//     }
-//   }, [isOpen, socket]);
-
-//   const renderNotification = (n, fromArchived = false) => (
-//     <div
-//       key={n._id}
-//       className="flex justify-between items-start p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-md"
-//     >
-//       <div className="flex-1">
-//         <p className="text-sm font-medium">
-//           {n.type === "friend_request" &&
-//             `${n.fromUser?.username || "Someone"} sent you a friend request`}
-//           {n.type === "friend_accept" &&
-//             `${n.fromUser?.username || "Someone"} accepted your friend request`}
-//         </p>
-//         <p className="text-xs text-gray-500">{formatTime(n.createdAt)}</p>
-//       </div>
-//       <div className="flex items-center gap-2">
-//         {!fromArchived && (
-//           <button
-//             onClick={() => handleArchive(n._id)}
-//             className="p-2 rounded-full hover:bg-yellow-100"
-//             title="Archive"
-//           >
-//             <FaBoxArchive className="text-yellow-500" />
-//           </button>
-//         )}
-//         <button
-//           onClick={() => handleDelete(n._id, fromArchived)}
-//           className="p-2 rounded-full hover:bg-red-100"
-//           title="Delete"
-//         >
-//           <FaTrash className="text-red-500" />
-//         </button>
-//       </div>
-//     </div>
-//   );
-
-//   return (
-//     <AnimatePresence>
-//       {isOpen && (
-//         <motion.div
-//           className="fixed inset-0 z-[999] flex justify-center items-center backdrop-blur-md bg-gradient-to-b from-black/40 via-black/30 to-black/40"
-//           initial={{ opacity: 0 }}
-//           animate={{ opacity: 1 }}
-//           exit={{ opacity: 0 }}
-//         >
-//           <motion.div
-//             initial={{ scale: 0.95, opacity: 0, y: 20 }}
-//             animate={{ scale: 1, opacity: 1, y: 0 }}
-//             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-//             transition={{ type: "spring", stiffness: 250, damping: 22 }}
-//             className="relative p-[2px] rounded-2xl overflow-hidden w-[90vw] max-w-2xl"
-//           >
-//             {/* Animated Border */}
-//             <div className="absolute inset-0 rounded-2xl animate-spin-slow bg-[conic-gradient(at_top_right,_#4f46e5,_#06b6d4,_#ec4899,_#f59e0b,_#4f46e5)]"></div>
-
-//             {/* Inner Card */}
-//             <div className="relative bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-xl backdrop-blur-xl h-[80vh] flex flex-col overflow-hidden">
-//               {/* Header */}
-//               <div className="flex justify-between items-center p-4 border-b border-white/10">
-//                 <h2 className="text-lg font-bold">Notifications</h2>
-//                 <button
-//                   onClick={onClose}
-//                   className="text-gray-500 hover:text-red-500 text-2xl font-bold transition-all duration-200 hover:scale-110"
-//                 >
-//                   ×
-//                 </button>
-//               </div>
-
-//               {/* Notification List */}
-//               <div className="flex-1 overflow-y-auto p-4 space-y-8">
-//                 {/* Active Section */}
-//                 <div>
-//                   <h3 className="text-md font-bold mb-2">Active</h3>
-//                   {activeNotis.length === 0
-//                     ? <p className="text-center text-gray-500">No active notifications</p>
-//                     : activeNotis.map((n) => renderNotification(n))
-//                   }
-//                 </div>
-
-//                 {/* Archived Section */}
-//                 <div>
-//                   <h3 className="text-md font-bold mb-2">Archived</h3>
-//                   {archivedNotis.length === 0
-//                     ? <p className="text-center text-gray-500">No archived notifications</p>
-//                     : archivedNotis.map((n) => renderNotification(n, true))
-//                   }
-//                 </div>
-//               </div>
-//             </div>
-//           </motion.div>
-//         </motion.div>
-//       )}
-//     </AnimatePresence>
-//   );
-// };
-
-// export default NotificationModal;
-
-
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import {
+  Archive,
+  Bell,
+  BellOff,
+  CheckCheck,
+  Compass,
+  Loader2,
+  Trash2,
+  UserPlus,
+  UserRoundCheck,
+  X,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import {
+  archiveNotification,
+  deleteNotification,
   getNotifications,
   markAsRead,
   markManyAsRead,
-  archiveNotification,
-  deleteNotification
 } from "../api/notifications";
-import { FaTrash, FaBell, FaBellSlash, FaCheckCircle, FaCompass } from "react-icons/fa";
-import { FaBoxArchive, FaCircleCheck } from "react-icons/fa6";
-import { toast } from "react-hot-toast";
+import {
+  acceptFriendRequest,
+  declineFriendRequest,
+  getPendingFriendRequests,
+} from "../api/profile";
+
+const shellTransition = {
+  type: "spring",
+  stiffness: 260,
+  damping: 24,
+};
+
+const formatTime = (dateStr) => {
+  try {
+    return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+  } catch {
+    return "";
+  }
+};
+
+const statusTone = (status) => {
+  if (status === "unread") return "bg-[#fff1dc] text-[#9a5313]";
+  if (status === "archived") return "bg-slate-100 text-slate-600";
+  return "bg-[#eef5ff] text-[#1e5a83]";
+};
 
 const NotificationModal = ({ isOpen, onClose, socket }) => {
-  const [activeNotis, setActiveNotis] = useState([]);
-  const [archivedNotis, setArchivedNotis] = useState([]);
-  const [activeTab, setActiveTab] = useState("active"); // 'active' or 'archived'
-  const [expandedId, setExpandedId] = useState(null);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("active");
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [expandedId, setExpandedId] = useState("");
 
-  // Helper: safe formatting
-  const formatTime = (dateStr) => {
-    try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
-    } catch {
-      return "";
-    }
-  };
+  const pendingRequestMap = useMemo(
+    () => new Map(pendingRequests.map((request) => [String(request.requesterId), request])),
+    [pendingRequests],
+  );
 
-  const loadNotifications = async () => {
+  const activeNotis = useMemo(
+    () => notifications.filter((item) => item.status !== "archived"),
+    [notifications],
+  );
+  const archivedNotis = useMemo(
+    () => notifications.filter((item) => item.status === "archived"),
+    [notifications],
+  );
+  const currentNotis = activeTab === "active" ? activeNotis : archivedNotis;
+  const unreadIds = useMemo(
+    () => activeNotis.filter((item) => item.status === "unread").map((item) => item._id),
+    [activeNotis],
+  );
+
+  const loadData = async () => {
     try {
-      const data = await getNotifications();
-      setActiveNotis(
-        data.filter((n) => n.status !== "archived").map((n) => ({
-          ...n,
-          _id: n._id || Date.now().toString()
-        }))
-      );
-      setArchivedNotis(
-        data.filter((n) => n.status === "archived").map((n) => ({
-          ...n,
-          _id: n._id || Date.now().toString()
-        }))
-      );
+      setLoading(true);
+      const [notificationData, pendingData] = await Promise.all([
+        getNotifications(),
+        getPendingFriendRequests().catch(() => []),
+      ]);
+      setNotifications(notificationData);
+      setPendingRequests(pendingData);
     } catch (err) {
-      console.error("Error fetching notifications", err);
+      console.error("Failed to load notifications", err);
+      toast.error("Could not load notifications");
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleArchive = async (id) => {
-    try {
-      await archiveNotification(id);
-      const toArchive = activeNotis.find((n) => n._id === id);
-      if (toArchive) {
-        setActiveNotis((prev) => prev.filter((n) => n._id !== id));
-        setArchivedNotis((prev) => [
-          { ...toArchive, status: "archived" },
-          ...prev,
-        ]);
-      }
-      setExpandedId(null);
-    } catch (err) {
-      console.error("Failed to archive notification", err);
-      toast.error("Failed to dismiss notification");
-    }
-  };
-
-  const handleDelete = async (id, fromArchived = false) => {
-    await deleteNotification(id);
-    if (fromArchived) {
-      setArchivedNotis((prev) => prev.filter((n) => n._id !== id));
-    } else {
-      setActiveNotis((prev) => prev.filter((n) => n._id !== id));
-    }
-    setExpandedId(null);
-  };
-
-  const handleMarkAllRead = async () => {
-    try {
-      await markManyAsRead(activeNotis.map((n) => n._id));
-      setActiveNotis((prev) =>
-        prev.map((notification) => ({
-          ...notification,
-          status: "read",
-        })),
-      );
-      toast.success("All notifications marked as read");
-    } catch (err) {
-      toast.error("Failed to mark all as read");
-    }
-  };
-
-  const handleModalClose = async () => {
-    const unreadIds = activeNotis.filter((n) => n.status === "unread").map((n) => n._id);
-    if (unreadIds.length) {
-      try {
-        await markManyAsRead(unreadIds);
-        setActiveNotis((prev) => prev.map((n) => (unreadIds.includes(n._id) ? { ...n, status: "read" } : n)));
-      } catch (err) {
-        console.error("Failed to mark notifications as read on close", err);
-      }
-    }
-    setExpandedId(null);
-    onClose();
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
-  useEffect(() => {
-    if (isOpen) loadNotifications();
-
-    if (socket) {
-      const handleSocketNotification = async (newNotification) => {
-        if (!newNotification._id) {
-          newNotification._id =
-            newNotification.id ||
-            `${newNotification?.type || "notification"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        }
-
-        if (typeof newNotification.fromUser === "string") {
-          try {
-            const res = await fetch(`/api/users/${newNotification.fromUser}`);
-            const userData = await res.json();
-            newNotification.fromUser = userData;
-          } catch {
-            newNotification.fromUser = { username: "Someone" };
-          }
-        }
-
-        setActiveNotis((prev) => [newNotification, ...prev]);
-      };
-
-      socket.on("notification", handleSocketNotification);
-
-      return () => {
-        socket.off("notification", handleSocketNotification);
-      };
-    }
-  }, [isOpen, socket]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
+
+    loadData();
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
@@ -345,312 +106,459 @@ const NotificationModal = ({ isOpen, onClose, socket }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, activeNotis]);
+  }, [isOpen]);
 
-  const getNotificationCopy = (notification) => {
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleSocketNotification = (notification) => {
+      setNotifications((prev) => {
+        const id = notification._id || notification.id;
+        if (!id) return prev;
+        if (prev.some((item) => String(item._id) === String(id))) return prev;
+        return [
+          {
+            ...notification,
+            _id: id,
+            status: notification.status || "unread",
+          },
+          ...prev,
+        ];
+      });
+    };
+
+    socket.on("notification", handleSocketNotification);
+    return () => socket.off("notification", handleSocketNotification);
+  }, [socket]);
+
+  const getCopy = (notification) => {
     if (notification.type === "friend_request") {
       return {
+        eyebrow: "Connection",
         title: `${notification.fromUser?.username || "Someone"} sent a friend request`,
-        body: "Tap below to accept, dismiss, or archive this request.",
+        body: "Respond here or archive it for later.",
       };
     }
+
     if (notification.type === "friend_accept") {
       return {
+        eyebrow: "Connection",
         title: `${notification.fromUser?.username || "Someone"} accepted your request`,
-        body: `You are now connected with ${notification.fromUser?.username || "this user"}.`,
+        body: "You are connected now. Open profile and keep the relationship warm.",
       };
     }
+
     return {
+      eyebrow: "Learning",
       title: notification.data?.title || "Learning nudge",
-      body: notification.data?.message || "A new learning nudge is ready for you.",
+      body: notification.data?.message || "A new learning prompt is ready.",
     };
   };
 
-  const renderNotification = (n, fromArchived = false) => (
-    <motion.div
-      key={n._id}
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`p-4 rounded-xl shadow-sm backdrop-blur-sm transition-all cursor-pointer
-        ${expandedId === n._id 
-          ? "bg-gradient-to-br from-purple-50/80 to-blue-50/80 dark:from-gray-800/90 dark:to-gray-800/70 border border-purple-200 dark:border-purple-700/50" 
-          : "bg-white/70 dark:bg-gray-800/70 border border-white/50 dark:border-gray-700/50 hover:border-purple-300 dark:hover:border-purple-600"
+  const markLocalRead = (ids = []) => {
+    const idSet = new Set(ids.map(String));
+    setNotifications((prev) =>
+      prev.map((item) =>
+        idSet.has(String(item._id)) && item.status !== "archived"
+          ? { ...item, status: "read" }
+          : item,
+      ),
+    );
+  };
+
+  const handleModalClose = async () => {
+    if (unreadIds.length) {
+      try {
+        await markManyAsRead(unreadIds);
+        markLocalRead(unreadIds);
+      } catch (err) {
+        console.error("Failed to mark notifications as read", err);
+      }
+    }
+
+    setExpandedId("");
+    onClose();
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!unreadIds.length) return;
+    try {
+      await markManyAsRead(unreadIds);
+      markLocalRead(unreadIds);
+      toast.success("All notifications marked as read");
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
+      toast.error("Could not mark all as read");
+    }
+  };
+
+  const handleArchive = async (id) => {
+    try {
+      setBusyId(id);
+      await archiveNotification(id);
+      setNotifications((prev) =>
+        prev.map((item) => (item._id === id ? { ...item, status: "archived" } : item)),
+      );
+      setExpandedId("");
+    } catch (err) {
+      console.error("Failed to archive notification", err);
+      toast.error("Could not archive notification");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      setBusyId(id);
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((item) => item._id !== id));
+      setExpandedId("");
+    } catch (err) {
+      console.error("Failed to delete notification", err);
+      toast.error("Could not delete notification");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleOpenLearningLink = async (notification) => {
+    try {
+      if (notification.status === "unread") {
+        await markAsRead(notification._id);
+        markLocalRead([notification._id]);
+      }
+    } catch (err) {
+      console.error("Failed to mark notification as read", err);
+    }
+
+    if (notification.data?.link) {
+      handleModalClose();
+      navigate(notification.data.link);
+    }
+  };
+
+  const handleAcceptRequest = async (notification) => {
+    const requesterId = String(notification.data?.requesterId || notification.fromUser?._id || "");
+    const request = pendingRequestMap.get(requesterId);
+
+    if (!request?._id) {
+      toast.error("Friend request is no longer available");
+      return;
+    }
+
+    try {
+      setBusyId(notification._id);
+      await acceptFriendRequest(request._id);
+      setPendingRequests((prev) => prev.filter((item) => item._id !== request._id));
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item._id === notification._id ? { ...item, status: "archived" } : item,
+        ),
+      );
+      setExpandedId("");
+      toast.success("Friend request accepted");
+    } catch (err) {
+      console.error("Failed to accept friend request", err);
+      toast.error("Could not accept friend request");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const handleDeclineRequest = async (notification) => {
+    const requesterId = String(notification.data?.requesterId || notification.fromUser?._id || "");
+    const request = pendingRequestMap.get(requesterId);
+
+    if (!request?._id) {
+      toast.error("Friend request is no longer available");
+      return;
+    }
+
+    try {
+      setBusyId(notification._id);
+      await declineFriendRequest(request._id);
+      setPendingRequests((prev) => prev.filter((item) => item._id !== request._id));
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item._id === notification._id ? { ...item, status: "archived" } : item,
+        ),
+      );
+      setExpandedId("");
+      toast.success("Friend request declined");
+    } catch (err) {
+      console.error("Failed to decline friend request", err);
+      toast.error("Could not decline friend request");
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const renderNotification = (notification, archived = false) => {
+    const copy = getCopy(notification);
+    const isExpanded = expandedId === notification._id;
+    const requesterId = String(notification.data?.requesterId || notification.fromUser?._id || "");
+    const pendingRequest = requesterId ? pendingRequestMap.get(requesterId) : null;
+
+    return (
+      <motion.div
+        key={notification._id}
+        layout
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        className={`rounded-[24px] border p-4 transition ${
+          isExpanded
+            ? "border-[#d7c2a4] bg-[#fffaf4] shadow-[0_18px_40px_rgba(89,60,27,0.08)]"
+            : "border-[#eadfce] bg-white/90"
         }`}
-      onClick={() => toggleExpand(n._id)}
-    >
-      <div className="flex gap-3 items-start">
-        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-          ${n.type === "friend_request"
-            ? "bg-blue-100 dark:bg-blue-900/50"
-            : n.type === "learning_nudge"
-              ? "bg-amber-100 dark:bg-amber-900/50"
-              : "bg-emerald-100 dark:bg-emerald-900/50"}`}>
-          {n.type === "friend_request" ? (
-            <FaBell className="text-blue-500 dark:text-blue-400 text-xl" />
-          ) : n.type === "learning_nudge" ? (
-            <FaCompass className="text-amber-500 dark:text-amber-400 text-xl" />
-          ) : (
-            <FaCircleCheck className="text-emerald-500 dark:text-emerald-400 text-xl" />
-          )}
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex justify-between items-start gap-3">
-            <div>
-              <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                {getNotificationCopy(n).title}
-              </h3>
-              {!fromArchived ? (
-                <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
-                  n.status === "unread" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
-                }`}>
-                  {n.status === "unread" ? "Unread" : "Seen"}
-                </span>
-              ) : (
-                <span className="mt-2 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                  Archived
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                {formatTime(n.createdAt)}
-              </span>
-              {!fromArchived ? (
+      >
+        <div className="flex gap-4">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#1f160f] text-white">
+            {notification.type === "friend_request" ? (
+              <UserPlus size={18} />
+            ) : notification.type === "friend_accept" ? (
+              <UserRoundCheck size={18} />
+            ) : (
+              <Compass size={18} />
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? "" : notification._id)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8e775c]">
+                  {copy.eyebrow}
+                </div>
+                <div className="mt-1 text-base font-semibold text-[#1f160f]">{copy.title}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${statusTone(notification.status)}`}>
+                    {archived ? "Archived" : notification.status === "unread" ? "Unread" : "Read"}
+                  </span>
+                  <span className="text-xs text-[#8e775c]">{formatTime(notification.createdAt)}</span>
+                </div>
+              </button>
+
+              {!archived ? (
                 <button
                   type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleArchive(n._id);
-                  }}
-                  className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-                  aria-label="Dismiss notification"
+                  onClick={() => handleArchive(notification._id)}
+                  disabled={busyId === notification._id}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-[#eadfce] bg-white text-[#6b5844] transition hover:bg-[#f6eee1] disabled:opacity-60"
+                  aria-label="Archive notification"
                 >
-                  ×
+                  <X size={16} />
                 </button>
               ) : null}
             </div>
-          </div>
-          
-          {expandedId === n._id && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="pt-3 space-y-3"
-            >
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <p>{getNotificationCopy(n).body}</p>
-              </div>
-              
-              <div className="flex gap-2 justify-end">
-                {!fromArchived && n.type === "friend_request" && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // This would accept the friend request
-                      handleArchive(n._id);
-                    }}
-                    className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm flex items-center gap-1"
-                  >
-                    <FaCheckCircle className="text-sm" />
-                    Accept
-                  </motion.button>
-                )}
-                
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(n._id, fromArchived);
-                  }}
-                  className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-lg text-sm flex items-center gap-1"
+
+            <AnimatePresence>
+              {isExpanded ? (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
                 >
-                  <FaTrash className="text-sm" />
-                  Delete
-                </motion.button>
+                  <p className="mt-4 text-sm leading-7 text-[#6b5844]">{copy.body}</p>
 
-                {n.type === "learning_nudge" && n.data?.link && !fromArchived && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        if (n.status === "unread") {
-                          await markAsRead(n._id);
-                          setActiveNotis((prev) => prev.map((item) => (item._id === n._id ? { ...item, status: "read" } : item)));
-                        }
-                      } catch (err) {
-                        console.error("Failed to mark notification as read", err);
-                      }
-                      window.location.href = n.data.link;
-                    }}
-                    className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white rounded-lg text-sm flex items-center gap-1"
-                  >
-                    Open
-                  </motion.button>
-                )}
-                
-                {!fromArchived && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleArchive(n._id);
-                    }}
-                    className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg text-sm flex items-center gap-1"
-                  >
-                    <FaBoxArchive className="text-sm" />
-                    Archive
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
-          )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {!archived && notification.type === "friend_request" && pendingRequest ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptRequest(notification)}
+                          disabled={busyId === notification._id}
+                          className="rounded-full bg-[#1f160f] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeclineRequest(notification)}
+                          disabled={busyId === notification._id}
+                          className="rounded-full border border-[#eadfce] bg-white px-4 py-2 text-sm font-semibold text-[#5f4c39] disabled:opacity-60"
+                        >
+                          Decline
+                        </button>
+                      </>
+                    ) : null}
+
+                    {!archived && notification.type === "learning_nudge" && notification.data?.link ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenLearningLink(notification)}
+                        disabled={busyId === notification._id}
+                        className="rounded-full bg-[#1f160f] px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        Open
+                      </button>
+                    ) : null}
+
+                    {!archived ? (
+                      <button
+                        type="button"
+                        onClick={() => handleArchive(notification._id)}
+                        disabled={busyId === notification._id}
+                        className="inline-flex items-center gap-2 rounded-full border border-[#eadfce] bg-white px-4 py-2 text-sm font-semibold text-[#5f4c39]"
+                      >
+                        <Archive size={14} />
+                        Archive
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(notification._id)}
+                      disabled={busyId === notification._id}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#f2cbc7] bg-[#fff2f1] px-4 py-2 text-sm font-semibold text-[#b33f35]"
+                    >
+                      <Trash2 size={14} />
+                      Delete
+                    </button>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </motion.div>
-  );
-
-  const currentNotis = activeTab === "active" ? activeNotis : archivedNotis;
+      </motion.div>
+    );
+  };
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen ? (
         <motion.div
-          className="fixed inset-0 z-[9999] flex justify-center items-center p-4 bg-gradient-to-br from-purple-900/40 via-blue-900/30 to-pink-900/40 backdrop-blur-md"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={handleModalClose}
         >
+          <div
+            className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.16),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.14),_transparent_22%),rgba(15,23,42,0.58)] backdrop-blur-md"
+            onClick={handleModalClose}
+          />
+
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative w-full max-w-lg h-[80vh] max-h-[700px]"
-            onClick={(event) => event.stopPropagation()}
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1, transition: shellTransition }}
+            exit={{ opacity: 0, y: 18, scale: 0.97 }}
+            className="relative flex h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-[34px] border border-[#eadfce] bg-[#fffaf4] shadow-[0_40px_120px_rgba(15,23,42,0.32)]"
           >
-            {/* Animated Border */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-purple-600 via-blue-500 to-pink-500 animate-gradient-xy blur-lg opacity-70" />
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-purple-600 via-blue-500 to-pink-500 opacity-20" />
-            
-            {/* Inner Card */}
-            <div className="relative h-full flex flex-col bg-white/90 dark:bg-gray-900/90 rounded-2xl shadow-xl backdrop-blur-xl overflow-hidden border border-white/30 dark:border-gray-700/50">
-              {/* Header */}
-              <div className="flex justify-between items-center p-5 border-b border-white/10">
+            <div className="border-b border-[#eadfce] bg-[linear-gradient(180deg,rgba(255,250,244,0.96),rgba(255,247,238,0.92))] px-5 py-4 sm:px-6">
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="bg-gradient-to-r from-purple-600 to-blue-500 p-2 rounded-lg">
-                    <FaBell className="text-white text-xl" />
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#1f160f] text-white">
+                    <Bell size={18} />
                   </div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
-                    Notifications
-                  </h2>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8e775c]">
+                      Inbox
+                    </div>
+                    <h2 className="mt-1 text-2xl font-semibold text-[#1f160f]">Notifications</h2>
+                  </div>
                 </div>
+
                 <button
+                  type="button"
                   onClick={handleModalClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 dark:bg-gray-800 dark:hover:bg-red-900/50 text-gray-500 hover:text-red-500 text-xl transition-all"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-[#eadfce] bg-white text-[#5f4c39] transition hover:bg-[#f6eee1]"
+                  aria-label="Close notifications"
                 >
-                  ×
+                  <X size={18} />
                 </button>
               </div>
+            </div>
 
-              {/* Tab Navigation */}
-              <div className="flex border-b border-gray-200 dark:border-gray-700 px-4">
-                <button
-                  className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 transition-colors
-                    ${activeTab === "active" 
-                      ? "text-purple-600 dark:text-purple-400 border-b-2 border-purple-500" 
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                  onClick={() => setActiveTab("active")}
-                >
-                  <FaBell className="text-sm" />
-                  Active
-                  {activeNotis.length > 0 && (
-                    <span className="bg-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {activeNotis.length}
-                    </span>
-                  )}
-                </button>
-                
-                <button
-                  className={`flex-1 py-3 font-medium flex items-center justify-center gap-2 transition-colors
-                    ${activeTab === "archived" 
-                      ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500" 
-                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                  onClick={() => setActiveTab("archived")}
-                >
-                  <FaBellSlash className="text-sm" />
-                  Archived
-                  {archivedNotis.length > 0 && (
-                    <span className="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                      {archivedNotis.length}
-                    </span>
-                  )}
-                </button>
+            <div className="border-b border-[#eadfce] bg-white/80 px-5 py-4 sm:px-6">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[20px] border border-[#eadfce] bg-[#fff8ef] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">Active</div>
+                  <div className="mt-2 text-2xl font-semibold text-[#1f160f]">{activeNotis.length}</div>
+                </div>
+                <div className="rounded-[20px] border border-[#eadfce] bg-[#fff8ef] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">Unread</div>
+                  <div className="mt-2 text-2xl font-semibold text-[#1f160f]">{unreadIds.length}</div>
+                </div>
+                <div className="rounded-[20px] border border-[#eadfce] bg-[#fff8ef] p-4">
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">Archived</div>
+                  <div className="mt-2 text-2xl font-semibold text-[#1f160f]">{archivedNotis.length}</div>
+                </div>
               </div>
 
-              {/* Action Bar */}
-              <div className="p-3 flex justify-end border-b border-gray-100 dark:border-gray-800">
-                {activeTab === "active" && activeNotis.length > 0 && (
-                  <motion.button
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleMarkAllRead}
-                    className="px-3 py-2 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg shadow text-sm flex items-center gap-2"
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="inline-flex rounded-full border border-[#eadfce] bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("active")}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      activeTab === "active" ? "bg-[#1f160f] text-white" : "text-[#6b5844]"
+                    }`}
                   >
-                    <FaCheckCircle className="text-emerald-500" />
-                    Mark all as read
-                  </motion.button>
-                )}
-              </div>
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("archived")}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      activeTab === "archived" ? "bg-[#1f160f] text-white" : "text-[#6b5844]"
+                    }`}
+                  >
+                    Archived
+                  </button>
+                </div>
 
-              {/* Notification List */}
-              <motion.div 
-                layout
-                className="flex-1 overflow-y-auto p-4 space-y-3"
-              >
-                <AnimatePresence>
-                  {currentNotis.length === 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex flex-col items-center justify-center h-full text-center p-8 text-gray-500 dark:text-gray-400"
-                    >
-                      <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-gray-800 dark:to-gray-800/50 p-6 rounded-full mb-4">
-                        <FaBellSlash className="text-3xl text-purple-500 dark:text-purple-400" />
-                      </div>
-                      <h3 className="text-lg font-medium mb-1">No notifications</h3>
-                      <p className="max-w-xs">
-                        {activeTab === "active" 
-                          ? "You're all caught up! New notifications will appear here." 
-                          : "You haven't archived any notifications yet."}
-                      </p>
-                    </motion.div>
-                  ) : (
-                    currentNotis.map((n) => renderNotification(n, activeTab === "archived"))
-                  )}
-                </AnimatePresence>
-              </motion.div>
-
-              {/* Footer */}
-              <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800">
-                You have {activeNotis.length} unread notification{activeNotis.length !== 1 ? 's' : ''}
+                {activeTab === "active" && unreadIds.length ? (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#eadfce] bg-white px-4 py-2 text-sm font-semibold text-[#5f4c39]"
+                  >
+                    <CheckCheck size={16} />
+                    Mark all read
+                  </button>
+                ) : null}
               </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,#fffaf4_0%,#f8eee0_100%)] px-5 py-4 sm:px-6">
+              {loading ? (
+                <div className="grid h-full place-items-center">
+                  <div className="text-center">
+                    <Loader2 className="mx-auto h-10 w-10 animate-spin text-[#c56c19]" />
+                    <div className="mt-4 text-sm text-[#6b5844]">Loading notifications...</div>
+                  </div>
+                </div>
+              ) : currentNotis.length ? (
+                <div className="space-y-3">
+                  <AnimatePresence>{currentNotis.map((item) => renderNotification(item, activeTab === "archived"))}</AnimatePresence>
+                </div>
+              ) : (
+                <div className="grid h-full place-items-center py-12">
+                  <div className="max-w-sm text-center">
+                    <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#fff1dc] text-[#9a5313]">
+                      {activeTab === "active" ? <BellOff size={24} /> : <Archive size={24} />}
+                    </div>
+                    <div className="mt-4 text-xl font-semibold text-[#1f160f]">
+                      {activeTab === "active" ? "You are all caught up" : "No archived notifications"}
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-[#6b5844]">
+                      {activeTab === "active"
+                        ? "New activity, learning nudges, and connection updates will appear here."
+                        : "Archived items will appear here when you clear them from the active list."}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 };

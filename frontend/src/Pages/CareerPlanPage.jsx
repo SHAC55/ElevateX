@@ -1,407 +1,476 @@
-
-
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { getCareerPlan, startLearningJourney, getJourneyStatus } from '../api/career';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
-import { Button } from '../Components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../Components/ui/Card';
-
-import SkillsSection from '../Components/AI/SkillsSection';
-import RoadmapSection from '../Components/AI/RoadmapSection';
-import ProjectsSection from '../Components/AI/ProjectsSection';
-import ResourcesSection from '../Components/AI/ResourcesSection';
-import FallbackNote from '../Components/AI/FallbackNote';
-
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
-  FaTools,
-  FaProjectDiagram,
   FaBookOpen,
   FaChartLine,
-  FaRoute,
   FaCheckCircle,
-  FaRocket,
   FaCompass,
-  FaBullseye,
-} from 'react-icons/fa';
+  FaLightbulb,
+  FaProjectDiagram,
+  FaRocket,
+  FaRoute,
+  FaUsers,
+} from "react-icons/fa";
+import { getCareerPlan, getJourneyStatus, startLearningJourney } from "../api/career";
+import SkillsSection from "../Components/AI/SkillsSection";
+import RoadmapSection from "../Components/AI/RoadmapSection";
+import ProjectsSection from "../Components/AI/ProjectsSection";
+import ResourcesSection from "../Components/AI/ResourcesSection";
 
-const Badge = ({ children }) => (
-  <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 ring-2 ring-white/30">
-    {children}
-  </span>
-);
+const quickLinkBase =
+  "group rounded-[28px] border p-5 transition hover:-translate-y-0.5";
 
-const SectionCard = ({ icon, title, children, tone = 'default' }) => {
-  const toneMap = {
-    default: 'from-white to-slate-50/80',
-    amber: 'from-amber-50/80 to-amber-100/40',
+const SECTION_STYLES = {
+  skills: {
+    icon: <FaLightbulb />,
+    title: "Skills",
+    href: "/career/plan/skills",
+    theme: "border-sky-200 bg-[linear-gradient(135deg,#eff6ff,#f8fdff)]",
+    description: "See the capabilities that matter most and start one immediately.",
+  },
+  roadmap: {
+    icon: <FaRoute />,
+    title: "Roadmap",
+    href: "/career/plan/overview",
+    theme: "border-amber-200 bg-[linear-gradient(135deg,#fff7ed,#fffdf8)]",
+    description: "Understand the order of execution instead of guessing what comes next.",
+  },
+  projects: {
+    icon: <FaProjectDiagram />,
+    title: "Projects",
+    href: "/career/plan/projects",
+    theme: "border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#f7fff9)]",
+    description: "Translate learning into proof that supports interviews and applications.",
+  },
+  resources: {
+    icon: <FaBookOpen />,
+    title: "Resources",
+    href: "/career/plan/resources",
+    theme: "border-fuchsia-200 bg-[linear-gradient(135deg,#fdf4ff,#fffaff)]",
+    description: "Use curated material instead of losing time searching randomly.",
+  },
+  communities: {
+    icon: <FaUsers />,
+    title: "Community",
+    href: "/career/plan/communities",
+    theme: "border-slate-200 bg-[linear-gradient(135deg,#f8fafc,#ffffff)]",
+    description: "Get accountability, feedback, and external momentum.",
+  },
+  progress: {
+    icon: <FaChartLine />,
+    title: "Progress",
+    href: "/career/plan/progress",
+    theme: "border-orange-200 bg-[linear-gradient(135deg,#fff7ed,#fffaf4)]",
+    description: "Track output, completion, and whether momentum is compounding.",
+  },
+};
+
+const MetricCard = ({ label, value, detail, tone = "default" }) => {
+  const tones = {
+    default: "border-[#eadfce] bg-white text-[#1f160f]",
+    dark: "border-[#1f160f] bg-[#1f160f] text-white",
+    warm: "border-[#f3d8bc] bg-[#fff4e9] text-[#6b3e12]",
+    cool: "border-[#cfe5f3] bg-[#eef8ff] text-[#14425f]",
+    green: "border-[#cbe8d7] bg-[#eefcf3] text-[#17543a]",
   };
 
   return (
-    <Card
-      variant="elevated"
-      className={`overflow-hidden border border-white/30 bg-gradient-to-br ${
-        toneMap[tone] || toneMap.default
-      } backdrop-blur-xl shadow-xl shadow-black/10 hover:shadow-2xl hover:shadow-black/20 transition-all duration-300 rounded-2xl`}
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="text-2xl tracking-tight font-serif font-semibold text-slate-900/90 flex items-center gap-3">
-          <Badge>{icon}</Badge>
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
-            {title}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">{children}</CardContent>
-    </Card>
+    <div className={`rounded-[28px] border p-5 shadow-[0_20px_50px_rgba(89,60,27,0.06)] ${tones[tone] || tones.default}`}>
+      <div className="text-[11px] uppercase tracking-[0.22em] opacity-70">{label}</div>
+      <div className="mt-3 text-4xl font-semibold">{value}</div>
+      {detail ? <div className="mt-2 text-sm opacity-80">{detail}</div> : null}
+    </div>
   );
 };
+
+const SectionBlock = ({ eyebrow, title, children, action }) => (
+  <section className="rounded-[32px] border border-[#eadfce] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">{eyebrow}</div>
+        <h2 className="mt-2 text-2xl font-semibold text-[#1f160f]">{title}</h2>
+      </div>
+      {action}
+    </div>
+    <div className="mt-5">{children}</div>
+  </section>
+);
 
 const CareerPlanPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const preloadedPlan = location.state?.plan;
+
   const [plan, setPlan] = useState(preloadedPlan || null);
   const [loading, setLoading] = useState(!preloadedPlan);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [journeyStarted, setJourneyStarted] = useState(false);
+  const [startingJourney, setStartingJourney] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
         let planData = preloadedPlan;
-        if (!planData) planData = await getCareerPlan();
-        // eslint-disable-next-line no-console
-        console.log('📋 Loaded plan:', planData);
+        if (!planData) {
+          planData = await getCareerPlan();
+        }
         setPlan(planData);
         const status = await getJourneyStatus();
-        setJourneyStarted(status.journeyStarted || false);
+        setJourneyStarted(Boolean(status.journeyStarted));
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('❌ Error loading plan or journey status:', err);
-        setError('Unable to load your AI-generated career plan.');
+        console.error("Error loading career plan", err);
+        setError("Unable to load your career plan right now.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchAll();
   }, [preloadedPlan]);
 
-  if (loading)
-    return (
-      <div className="min-h-screen grid place-items-center px-6 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40">
-        <div className="text-center">
-          <div className="relative mx-auto mb-6 h-16 w-16">
-            <div className="absolute inset-0 animate-ping rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 opacity-30 duration-1000" />
-            <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-fuchsia-500 shadow-lg shadow-indigo-500/30">
-              <div className="h-8 w-8 bg-white/20 rounded-full animate-pulse" />
-            </div>
-          </div>
-          <p className="text-slate-600 font-medium tracking-tight">Loading your AI-powered career plan…</p>
-        </div>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40 px-6">
-        <div className="text-center p-8 rounded-3xl border border-red-200/60 bg-white/80 backdrop-blur-xl shadow-2xl max-w-md">
-          <div className="text-red-500 text-4xl mb-2">❌</div>
-          <h2 className="text-2xl font-semibold text-slate-800 mb-3">Something went wrong</h2>
-          <p className="text-slate-600">{error}</p>
-        </div>
-      </div>
-    );
-
-  if (!plan)
-    return (
-      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40 px-6">
-        <div className="text-center p-8 rounded-3xl border border-slate-200/60 bg-white/80 backdrop-blur-xl shadow-2xl max-w-md">
-          <div className="text-slate-500 text-4xl mb-2">📋</div>
-          <h2 className="text-2xl font-semibold text-slate-800 mb-3">No plan available</h2>
-          <p className="text-slate-600">Please generate a career plan first.</p>
-        </div>
-      </div>
-    );
-
-  // Helpers
   const flattenSkills = () => {
-    const skillObj = plan.skills || plan.raw?.skills || {};
-    return Object.values(skillObj).flat().filter(s => typeof s === 'string' && s.trim() !== '');
+    const skillObj = plan?.skills || plan?.raw?.skills || {};
+    return Object.values(skillObj)
+      .flat()
+      .filter((skill) => typeof skill === "string" && skill.trim() !== "");
   };
 
   const transformResources = () => {
-    const resObj = plan.resources || plan.raw?.resources || {};
+    const resObj = plan?.resources || plan?.raw?.resources || {};
     return Object.entries(resObj).map(([key, value]) => ({
-      type: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      type: key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()),
       list: Array.isArray(value) ? value : [],
     }));
   };
 
-  const getSection = field => {
-    const main = Array.isArray(plan[field]) ? plan[field] : [];
-    const fallback = Array.isArray(plan.raw?.[field]) ? plan.raw[field] : [];
+  const getSection = (field) => {
+    const main = Array.isArray(plan?.[field]) ? plan[field] : [];
+    const fallback = Array.isArray(plan?.raw?.[field]) ? plan.raw[field] : [];
     return main.length ? main : fallback;
   };
 
-  const skills = flattenSkills();
-  const resources = transformResources();
-  const roadmap = getSection('roadmap');
-  const projects = getSection('projects');
-  const careerOutlook = plan.career_outlook || plan.raw?.career_outlook || null;
-  const analytics = plan.analytics || null;
-  const executiveSummary = plan.executiveSummary || null;
-  const jobSearchStrategy = plan.job_search_strategy || null;
-  const marketSignals = plan.market_signals || null;
+  const skills = useMemo(() => flattenSkills(), [plan]);
+  const resources = useMemo(() => transformResources(), [plan]);
+  const roadmap = useMemo(() => getSection("roadmap"), [plan]);
+  const projects = useMemo(() => getSection("projects"), [plan]);
+  const analytics = plan?.analytics || null;
+  const executiveSummary = plan?.executiveSummary || null;
+  const jobSearchStrategy = plan?.job_search_strategy || null;
+  const marketSignals = plan?.market_signals || null;
+  const careerOutlook = plan?.career_outlook || plan?.raw?.career_outlook || null;
+
+  const quickLinks = [
+    { ...SECTION_STYLES.skills, count: skills.length },
+    { ...SECTION_STYLES.roadmap, count: roadmap.length },
+    { ...SECTION_STYLES.projects, count: projects.length },
+    { ...SECTION_STYLES.resources, count: resources.reduce((sum, item) => sum + item.list.length, 0) },
+    { ...SECTION_STYLES.progress, count: analytics?.readinessScore ?? "N/A" },
+    { ...SECTION_STYLES.communities, count: "Live" },
+  ];
 
   const handleStartJourney = async () => {
     if (journeyStarted) {
-      toast.info('Journey already started. Redirecting to learning page...');
-      navigate('/career/plan/skills');
+      navigate("/career/plan/skills");
       return;
     }
+
     try {
-      const res = await startLearningJourney();
-      if (res.message === 'Journey already started') {
-        toast.warn('Journey already started');
-        setJourneyStarted(true);
-        navigate('/career/plan/skills');
-      } else {
-        toast.success(res.message || 'Journey started!');
-        setJourneyStarted(true);
-        navigate('/career/plan/skills');
-      }
+      setStartingJourney(true);
+      const response = await startLearningJourney();
+      toast.success(response.message || "Journey started");
+      setJourneyStarted(true);
+      navigate("/career/plan/skills");
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error starting journey', err);
-      toast.error('Failed to start learning journey');
+      console.error("Failed to start journey", err);
+      toast.error("Failed to start learning journey");
+    } finally {
+      setStartingJourney(false);
     }
   };
 
-  return (
-    <div className="min-h-screen relative px-4 py-10 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50/40 via-white to-violet-50/40">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/50 bg-white/70 backdrop-blur-xl px-4 py-2 text-sm font-medium text-slate-700 shadow-md mb-6">
-            <span className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
-            AI-Powered Career Blueprint
-          </div>
-          <h1 className="mt-4 text-4xl sm:text-5xl font-serif font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-700">
-            Your Personalized Career Plan
-          </h1>
-          <p className="mt-3 text-lg text-slate-600/90 max-w-2xl mx-auto">
-            A comprehensive roadmap designed by AI to guide your professional development journey
-          </p>
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[linear-gradient(180deg,#fffaf2_0%,#f3e7d2_100%)] px-6">
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 animate-pulse rounded-[20px] bg-[linear-gradient(135deg,#1f2937,#0f172a)]" />
+          <p className="mt-5 text-sm font-medium text-[#6b5844]">Loading your learning workspace...</p>
         </div>
+      </div>
+    );
+  }
 
-        <div className="space-y-8">
-          {executiveSummary && (
-            <SectionCard icon={<FaCompass />} title="Strategic Readout">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Headline</div>
-                  <p className="mt-2 text-xl font-semibold text-slate-900">{executiveSummary.headline}</p>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{executiveSummary.opportunityNarrative}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Strategic Edge</div>
-                  <p className="mt-2 text-lg font-semibold text-slate-900">{executiveSummary.strategicAdvantage}</p>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {(executiveSummary.primaryConstraints || []).map((constraint, index) => (
-                      <li key={index}>• {constraint}</li>
-                    ))}
-                  </ul>
-                </div>
+  if (error || !plan) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[linear-gradient(180deg,#fffaf2_0%,#f3e7d2_100%)] px-6">
+        <div className="max-w-md rounded-[32px] border border-[#eadfce] bg-white p-8 text-center shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+          <div className="text-3xl">Plan unavailable</div>
+          <p className="mt-3 text-sm leading-7 text-[#6b5844]">
+            {error || "Generate your plan first to unlock this workspace."}
+          </p>
+          <Link
+            to="/career-os"
+            className="mt-6 inline-flex rounded-full bg-[#1f160f] px-5 py-3 text-sm font-semibold text-white"
+          >
+            Back to CareerOS
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.12),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.12),_transparent_20%),linear-gradient(180deg,_#fffaf2_0%,_#f3e7d2_100%)] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1500px] space-y-6">
+        <section className="overflow-hidden rounded-[38px] border border-[#ead8c0] bg-[#1b140f] text-white shadow-[0_30px_90px_rgba(61,36,10,0.24)]">
+          <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.2fr_0.8fr] lg:px-8 lg:py-8">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#fdba74] bg-[#fff1dc] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7c2d12]">
+                <FaCompass />
+                Career Plan
               </div>
-            </SectionCard>
-          )}
+              <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+                Stop reading plans. Start executing one.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#efe4d7] sm:text-base">
+                This workspace turns your plan into an operating system: what to learn, what to build,
+                what to practice, and where to focus next.
+              </p>
 
-          {analytics && (
-            <SectionCard icon={<FaBullseye />} title="Career Analytics">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-indigo-200/50 bg-indigo-50/80 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600">Readiness Score</div>
-                  <div className="mt-3 text-4xl font-bold text-slate-900">{analytics.readinessScore}</div>
-                </div>
-                <div className="rounded-2xl border border-amber-200/50 bg-amber-50/80 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Execution Risk</div>
-                  <div className="mt-3 text-2xl font-bold capitalize text-slate-900">{analytics.executionRisk}</div>
-                </div>
-                <div className="rounded-2xl border border-emerald-200/50 bg-emerald-50/80 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Weeks To Ready</div>
-                  <div className="mt-3 text-4xl font-bold text-slate-900">{analytics.estimatedWeeksToMarketReady}</div>
-                </div>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleStartJourney}
+                  className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#1b140f]"
+                >
+                  {journeyStarted ? <FaCheckCircle /> : <FaRocket />}
+                  {startingJourney ? "Starting..." : journeyStarted ? "Continue learning" : "Start learning"}
+                </button>
+                <Link
+                  to="/career/plan/skills"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Open skills
+                </Link>
               </div>
+            </div>
 
-              <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-sm font-semibold text-slate-900">Strengths</div>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {(analytics.strengths || []).map((item, index) => <li key={index}>• {item}</li>)}
-                  </ul>
-                </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-sm font-semibold text-slate-900">Gaps</div>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {(analytics.gaps || []).map((item, index) => <li key={index}>• {item}</li>)}
-                  </ul>
-                </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-sm font-semibold text-slate-900">Momentum Levers</div>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {(analytics.momentumLevers || []).map((item, index) => <li key={index}>• {item}</li>)}
-                  </ul>
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
-          {skills.length > 0 && (
-            <SectionCard icon={<FaTools />} title="Skills to Learn">
-              <SkillsSection skills={skills} />
-            </SectionCard>
-          )}
-
-          {roadmap.length > 0 && (
-            <SectionCard icon={<FaRoute />} title="Learning Roadmap">
-              <RoadmapSection roadmap={roadmap} />
-            </SectionCard>
-          )}
-
-          {projects.length > 0 && (
-            <SectionCard icon={<FaProjectDiagram />} title="Portfolio Projects">
-              <ProjectsSection projects={projects} />
-            </SectionCard>
-          )}
-
-          {resources.length > 0 && (
-            <SectionCard icon={<FaBookOpen />} title="Learning Resources">
-              <ResourcesSection resources={resources} />
-            </SectionCard>
-          )}
-
-          {careerOutlook && (
-            <SectionCard icon={<FaChartLine />} title="Career Outlook">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="rounded-2xl border border-indigo-200/40 bg-gradient-to-br from-indigo-50 to-indigo-100/30 p-5 backdrop-blur">
-                  <h3 className="font-medium text-indigo-700 mb-2">Potential Roles</h3>
-                  <ul className="text-sm text-slate-700 space-y-1">
-                    {careerOutlook.roles?.map((role, i) => (
-                      <li key={i}>• {role}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="rounded-2xl border border-emerald-200/40 bg-gradient-to-br from-emerald-50 to-emerald-100/30 p-5 backdrop-blur">
-                  <h3 className="font-medium text-emerald-700 mb-2">Salary Range</h3>
-                  <p className="text-sm text-slate-700">{careerOutlook.salary_range}</p>
-                </div>
-                <div className="rounded-2xl border border-fuchsia-200/40 bg-gradient-to-br from-fuchsia-50 to-fuchsia-100/30 p-5 backdrop-blur">
-                  <h3 className="font-medium text-fuchsia-700 mb-2">Industry Trends</h3>
-                  <ul className="text-sm text-slate-700 space-y-1">
-                    {careerOutlook.industry_trends?.map((trend, i) => (
-                      <li key={i}>• {trend}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
-          {jobSearchStrategy && (
-            <SectionCard icon={<FaRocket />} title="Job Search System">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-sm font-semibold text-slate-900">Execution Targets</div>
-                  <p className="mt-3 text-sm text-slate-600">
-                    {jobSearchStrategy.applicationTargetsPerWeek} targeted applications per week
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {jobSearchStrategy.networkingTouchesPerWeek} networking touches per week
-                  </p>
-                  <p className="mt-4 text-sm leading-6 text-slate-700">{jobSearchStrategy.portfolioPriority}</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-sm font-semibold text-slate-900">Interview Focus Areas</div>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {(jobSearchStrategy.interviewFocusAreas || []).map((item, index) => (
-                      <li key={index}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
-          {marketSignals && (
-            <SectionCard icon={<FaChartLine />} title="Market Signals">
-              <div className="grid gap-4 lg:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Hiring Heat</div>
-                  <div className="mt-3 text-2xl font-bold capitalize text-slate-900">{marketSignals.hiringHeat}</div>
-                </div>
-                <div className="rounded-2xl border border-slate-200/70 bg-white/70 p-5 lg:col-span-2">
-                  <div className="text-sm font-semibold text-slate-900">Demand Drivers</div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(marketSignals.demandDrivers || []).map((item, index) => (
-                      <span key={index} className="rounded-full border border-slate-300 px-3 py-1 text-sm text-slate-700">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-5 text-sm font-semibold text-slate-900">Emerging Skills</div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(marketSignals.emergingSkills || []).map((item, index) => (
-                      <span key={index} className="rounded-full bg-slate-900 px-3 py-1 text-sm text-white">
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </SectionCard>
-          )}
-
-          {/* Start Journey CTA */}
-          <div className="sticky bottom-6 z-10 mt-16 flex justify-center">
-            {/* glassy pill wrapper */}
-            <div className="rounded-full bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl p-1.5 inline-flex">
-              <Button
-                onClick={handleStartJourney}
-                size="lg"
-                variant={journeyStarted ? 'outline' : 'premium'}
-                className={`rounded-full px-8 py-4 text-lg font-medium tracking-tight transition-all inline-flex items-center justify-center gap-2
-                  ${
-                    journeyStarted
-                      ? '!bg-transparent !border-slate-300/60 !text-slate-800 !rounded-full !shadow-none hover:!border-slate-400/70'
-                      : 'shadow-lg hover:shadow-xl'
-                  }`}
-              >
-                {journeyStarted ? (
-                  <>
-                    <FaCheckCircle className="text-emerald-600" />
-                    <span>Journey Already Started</span>
-                  </>
-                ) : (
-                  <>
-                    <FaRocket />
-                    <span>Start Learning Journey</span>
-                  </>
-                )}
-              </Button>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <MetricCard
+                label="Readiness"
+                value={analytics?.readinessScore ?? "N/A"}
+                detail="Current signal of how close you are to being market ready."
+                tone="dark"
+              />
+              <MetricCard
+                label="Estimated Weeks"
+                value={analytics?.estimatedWeeksToMarketReady ?? "N/A"}
+                detail="The current runway implied by your plan."
+                tone="warm"
+              />
+              <MetricCard
+                label="Execution Risk"
+                value={analytics?.executionRisk ? String(analytics.executionRisk).replace("_", " ") : "N/A"}
+                detail="How likely the plan is to stall without tighter focus."
+                tone="cool"
+              />
+              <MetricCard
+                label="Journey Status"
+                value={journeyStarted ? "Active" : "Not started"}
+                detail={journeyStarted ? "You can continue directly into skills." : "Kick off the learning flow to start tracking."}
+                tone="green"
+              />
             </div>
           </div>
-        </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {quickLinks.map((item) => (
+            <Link key={item.title} to={item.href} className={`${quickLinkBase} ${item.theme}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#1f160f] text-white">
+                  {item.icon}
+                </div>
+                <div className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#6b5844]">
+                  {item.count}
+                </div>
+              </div>
+              <h3 className="mt-4 text-xl font-semibold text-[#1f160f]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-[#6b5844]">{item.description}</p>
+            </Link>
+          ))}
+        </section>
+
+        {executiveSummary ? (
+          <SectionBlock
+            eyebrow="Strategic Readout"
+            title={executiveSummary.headline || "Your current strategic position"}
+            action={
+              <Link
+                to="/career/plan/skills"
+                className="inline-flex rounded-full border border-[#eadfce] bg-[#fff8ef] px-4 py-2 text-sm font-semibold text-[#1f160f]"
+              >
+                Go to skill execution
+              </Link>
+            }
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">Opportunity</div>
+                <p className="mt-3 text-base leading-7 text-[#1f160f]">
+                  {executiveSummary.opportunityNarrative}
+                </p>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#8e775c]">Strategic Edge</div>
+                <p className="mt-3 text-base font-semibold text-[#1f160f]">
+                  {executiveSummary.strategicAdvantage}
+                </p>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(executiveSummary.primaryConstraints || []).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionBlock>
+        ) : null}
+
+        {analytics ? (
+          <SectionBlock eyebrow="Plan Signals" title="What to protect and what to fix first">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Strengths</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(analytics.strengths || []).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Gaps</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(analytics.gaps || []).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Momentum Levers</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(analytics.momentumLevers || []).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionBlock>
+        ) : null}
+
+        {skills.length ? (
+          <SectionBlock
+            eyebrow="Core Skills"
+            title="Capabilities to build now"
+            action={
+              <Link
+                to="/career/plan/skills"
+                className="inline-flex rounded-full bg-[#1f160f] px-4 py-2 text-sm font-semibold text-white"
+              >
+                Open skills workspace
+              </Link>
+            }
+          >
+            <SkillsSection skills={skills} />
+          </SectionBlock>
+        ) : null}
+
+        {roadmap.length ? (
+          <SectionBlock eyebrow="Execution Order" title="Recommended roadmap">
+            <RoadmapSection roadmap={roadmap} />
+          </SectionBlock>
+        ) : null}
+
+        {projects.length ? (
+          <SectionBlock eyebrow="Proof Building" title="Projects that strengthen your profile">
+            <ProjectsSection projects={projects} />
+          </SectionBlock>
+        ) : null}
+
+        {resources.length ? (
+          <SectionBlock eyebrow="Learning Inputs" title="Resources worth using">
+            <ResourcesSection resources={resources} />
+          </SectionBlock>
+        ) : null}
+
+        {jobSearchStrategy ? (
+          <SectionBlock eyebrow="Search System" title="How to turn preparation into opportunities">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Execution targets</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  <div>{jobSearchStrategy.applicationTargetsPerWeek} targeted applications per week</div>
+                  <div>{jobSearchStrategy.networkingTouchesPerWeek} networking touches per week</div>
+                  <div>{jobSearchStrategy.portfolioPriority}</div>
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Interview focus areas</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(jobSearchStrategy.interviewFocusAreas || []).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionBlock>
+        ) : null}
+
+        {marketSignals || careerOutlook ? (
+          <SectionBlock eyebrow="Market Context" title="What the plan is reacting to">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Hiring heat</div>
+                <div className="mt-3 text-2xl font-semibold capitalize text-[#1f160f]">
+                  {marketSignals?.hiringHeat || "Unknown"}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(marketSignals?.demandDrivers || []).map((item, index) => (
+                    <span key={`${item}-${index}`} className="rounded-full border border-[#dfcfb9] px-3 py-1 text-xs text-[#6b5844]">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Emerging skills</div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(marketSignals?.emergingSkills || []).map((item, index) => (
+                    <span key={`${item}-${index}`} className="rounded-full bg-[#1f160f] px-3 py-1 text-xs text-white">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#eadfce] bg-[#fff8ef] p-5">
+                <div className="text-sm font-semibold text-[#1f160f]">Career outlook</div>
+                <div className="mt-4 space-y-2 text-sm text-[#6b5844]">
+                  {(careerOutlook?.roles || []).slice(0, 3).map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
+                  ))}
+                  {careerOutlook?.salary_range ? <div>{careerOutlook.salary_range}</div> : null}
+                </div>
+              </div>
+            </div>
+          </SectionBlock>
+        ) : null}
       </div>
 
       <ToastContainer
         position="top-right"
         autoClose={3000}
-        toastClassName="rounded-xl font-sans bg-white/90 backdrop-blur-xl border border-white/40 shadow-lg"
-        progressClassName="bg-gradient-to-r from-indigo-500 to-fuchsia-500"
+        toastClassName="rounded-xl border border-[#eadfce] bg-white text-[#1f160f]"
+        progressClassName="bg-[#1f160f]"
       />
     </div>
   );

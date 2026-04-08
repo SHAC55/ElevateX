@@ -25,6 +25,7 @@ import {
   updateResumeProfile,
   updateResumeVersion,
 } from "../api/resume";
+import ProductHeader from "../Components/ui/ProductHeader";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap');
@@ -437,24 +438,63 @@ function Resume() {
     <div className="resume-shell">
       <style>{styles}</style>
 
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+        <ProductHeader
+          eyebrow={
+            <>
+              <WandSparkles size={14} />
+              Resume Workspace
+            </>
+          }
+          title="Build tailored resumes without losing the operating context."
+          description="Create versions for specific roles, analyze fit, improve keyword coverage, and export a polished draft from one workspace."
+          stats={[
+            {
+              label: "Versions",
+              value: versions.length,
+              detail: "Tailored drafts available in this workspace.",
+            },
+            {
+              label: "Best Score",
+              value: versionScore || 0,
+              detail: "Current strongest resume signal.",
+            },
+            {
+              label: "Target Role",
+              value: activeVersion.targetRole || "Open",
+              detail: activeVersion.targetCompany || "No company selected",
+            },
+            {
+              label: "Keywords",
+              value: deferredKeywords.length,
+              detail: "Tracked from analysis and job targeting.",
+            },
+          ]}
+          actions={[
+            {
+              label: "Save all",
+              onClick: saveEverything,
+              icon: <Save size={16} />,
+              disabled: Boolean(busy),
+            },
+            {
+              label: "Tailor",
+              onClick: generate,
+              icon: <WandSparkles size={16} />,
+              disabled: Boolean(busy),
+              variant: "secondary",
+            },
+          ]}
+        />
+      </motion.div>
+
       <motion.section
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         className="card hero"
+        style={{ marginTop: 18 }}
       >
-        <div>
-          <div className="pill">
-            <WandSparkles size={14} />
-            YC-grade resume engine
-          </div>
-          <h1>ElevateX Resume OS</h1>
-          <p>
-            This builder uses the user&apos;s career choice, profile links, and job description
-            to create tailored resume versions with fit scoring, keyword coverage, and a clean export path.
-          </p>
-        </div>
-
-        <div className="stack" style={{ minWidth: 320 }}>
+        <div className="stack" style={{ minWidth: 320, width: "100%" }}>
           <div className="two-col">
             <input
               placeholder="Target role"

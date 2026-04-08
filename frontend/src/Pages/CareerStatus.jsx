@@ -61,15 +61,21 @@ const GlassCard = ({ children, className = '' }) => (
   </div>
 );
 
-const StatChip = ({ label, value, tint = 'indigo' }) => (
-  <div
-    className={`flex flex-col rounded-xl border p-4 backdrop-blur bg-gradient-to-br 
-      from-${tint}-50/50 to-${tint}-100/30 border-${tint}-200/50`}
-  >
-    <span className={`text-sm font-medium text-${tint}-700`}>{label}</span>
-    <span className="mt-1 text-xl font-semibold text-slate-900">{value}</span>
-  </div>
-);
+const StatChip = ({ label, value, tint = 'indigo' }) => {
+  const toneMap = {
+    indigo: 'border-indigo-200/60 bg-indigo-50/80 text-indigo-700',
+    violet: 'border-violet-200/60 bg-violet-50/80 text-violet-700',
+    fuchsia: 'border-fuchsia-200/60 bg-fuchsia-50/80 text-fuchsia-700',
+    emerald: 'border-emerald-200/60 bg-emerald-50/80 text-emerald-700',
+  };
+
+  return (
+    <div className={`flex flex-col rounded-2xl border p-4 backdrop-blur ${toneMap[tint] || toneMap.indigo}`}>
+      <span className="text-sm font-medium">{label}</span>
+      <span className="mt-1 text-2xl font-semibold text-slate-900">{value}</span>
+    </div>
+  );
+};
 
 /* -------------------------------- Component -------------------------------- */
 const CareerStatus = ({ refreshStatus }) => {
@@ -190,7 +196,7 @@ const CareerStatus = ({ refreshStatus }) => {
     <div className="min-h-screen relative bg-aurora">
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50/70 via-white/70 to-indigo-50/60 pointer-events-none" />
 
-      <div className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="relative px-4 pb-12 pt-8 sm:px-6 lg:px-8">
         <ToastContainer
           position="top-right"
           autoClose={3000}
@@ -206,17 +212,17 @@ const CareerStatus = ({ refreshStatus }) => {
           className="max-w-6xl mx-auto"
         >
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/60 backdrop-blur-xl px-4 py-2 text-sm font-medium text-slate-700 shadow-md">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#fdba74] bg-[#fff1dc] px-4 py-2 text-sm font-medium text-[#7c2d12] shadow-md">
               <span className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500" />
               Career status overview
             </div>
             <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-700">
-              Career Path Status
+              Your career direction, plan, and next moves
             </h1>
             <p className="mt-4 max-w-xl mx-auto text-lg text-slate-600">
               {status === 'not_chosen'
-                ? 'Your career journey starts here'
-                : 'Your personalized career roadmap'}
+                ? 'Choose a direction to unlock a focused learning system.'
+                : 'Review your path, refresh your profile, and generate the next version of your plan.'}
             </p>
           </div>
 

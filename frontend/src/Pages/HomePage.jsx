@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowRight,
@@ -26,12 +27,12 @@ import {
 } from "../api/dashboard";
 
 const STAGE_META = {
-  wishlist: { label: "Wishlist", color: "bg-slate-100 text-slate-700 border-slate-200" },
-  applied: { label: "Applied", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  oa: { label: "OA", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  interview: { label: "Interview", color: "bg-violet-100 text-violet-700 border-violet-200" },
-  offer: { label: "Offer", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-  rejected: { label: "Rejected", color: "bg-rose-100 text-rose-700 border-rose-200" },
+  wishlist: { label: "Wishlist", tone: "bg-slate-100 text-slate-700 border-slate-200" },
+  applied: { label: "Applied", tone: "bg-blue-100 text-blue-700 border-blue-200" },
+  oa: { label: "OA", tone: "bg-amber-100 text-amber-700 border-amber-200" },
+  interview: { label: "Interview", tone: "bg-violet-100 text-violet-700 border-violet-200" },
+  offer: { label: "Offer", tone: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  rejected: { label: "Rejected", tone: "bg-rose-100 text-rose-700 border-rose-200" },
 };
 
 const READINESS_ICONS = {
@@ -42,29 +43,131 @@ const READINESS_ICONS = {
   proof: Award,
 };
 
-const scoreTone = (score) => {
-  if (score >= 80) return "text-emerald-700 bg-emerald-100";
-  if (score >= 60) return "text-amber-700 bg-amber-100";
-  return "text-rose-700 bg-rose-100";
+const ACTION_META = {
+  applications: {
+    href: "#pipeline",
+    cta: "Open pipeline",
+    eyebrow: "Pipeline",
+  },
+  resume: {
+    href: "/resume-tools",
+    cta: "Improve resume",
+    eyebrow: "Resume",
+  },
+  interview: {
+    href: "/mock-interview",
+    cta: "Run interview",
+    eyebrow: "Interview",
+  },
+  skills: {
+    href: "/career/plan/skills",
+    cta: "Study skills",
+    eyebrow: "Learning",
+  },
+  portfolio: {
+    href: "/portfolio",
+    cta: "Build proof",
+    eyebrow: "Portfolio",
+  },
+  momentum: {
+    href: "/career/plan",
+    cta: "Open plan",
+    eyebrow: "Momentum",
+  },
 };
+
+const QUICK_LINKS = [
+  {
+    title: "Skill sprint",
+    description: "Jump back into your learning path and close one high-value gap.",
+    href: "/career/plan/skills",
+    icon: GraduationCap,
+    theme: "from-sky-500 via-cyan-500 to-emerald-400",
+  },
+  {
+    title: "Mock interview",
+    description: "Get one fresh signal today and tighten your speaking loop.",
+    href: "/mock-interview",
+    icon: Sparkles,
+    theme: "from-orange-500 via-amber-500 to-yellow-400",
+  },
+  {
+    title: "Resume lab",
+    description: "Sharpen your strongest resume version against your target role.",
+    href: "/resume-tools",
+    icon: Briefcase,
+    theme: "from-slate-800 via-slate-700 to-slate-600",
+  },
+  {
+    title: "Portfolio proof",
+    description: "Turn work into evidence that supports callbacks.",
+    href: "/portfolio",
+    icon: FolderKanban,
+    theme: "from-fuchsia-600 via-rose-500 to-orange-400",
+  },
+];
+
+const scoreTone = (score) => {
+  if (score >= 80) return "bg-emerald-100 text-emerald-700";
+  if (score >= 60) return "bg-amber-100 text-amber-700";
+  return "bg-rose-100 text-rose-700";
+};
+
+const formatDate = (value) => {
+  if (!value) return "No activity yet";
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(new Date(value));
+  } catch {
+    return "Recent";
+  }
+};
+
+const movementLabel = (label = "") =>
+  String(label)
+    .replace("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 
 const Chart = ({ series = [], color = "bg-[#d97706]" }) => {
   const maxValue = Math.max(...series.map((item) => item.value), 1);
 
   return (
-    <div className="flex items-end gap-2 h-32">
+    <div className="flex h-28 items-end gap-2">
       {series.map((item) => (
-        <div key={item.date} className="flex-1 flex flex-col items-center gap-2">
-          <div className="w-full bg-[#f1e7d8] rounded-t-xl relative overflow-hidden" style={{ height: "96px" }}>
+        <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
+          <div className="relative h-20 w-full overflow-hidden rounded-t-2xl bg-[#f4eadb]">
             <div
-              className={`absolute bottom-0 left-0 right-0 rounded-t-xl ${color}`}
-              style={{ height: `${Math.max((item.value / maxValue) * 100, item.value > 0 ? 10 : 0)}%` }}
+              className={`absolute bottom-0 left-0 right-0 rounded-t-2xl ${color}`}
+              style={{
+                height: `${Math.max((item.value / maxValue) * 100, item.value > 0 ? 10 : 0)}%`,
+              }}
             />
           </div>
-          <span className="text-[10px] text-[#7a6c59]">{item.date.slice(5)}</span>
+          <span className="text-[10px] text-[#8d7a63]">{item.date.slice(5)}</span>
         </div>
       ))}
     </div>
+  );
+};
+
+const DashboardActionLink = ({ href, children, className = "" }) => {
+  const classes = `inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${className}`;
+
+  if (href.startsWith("#")) {
+    return (
+      <a href={href} className={classes}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={href} className={classes}>
+      {children}
+    </Link>
   );
 };
 
@@ -106,6 +209,24 @@ const HomePage = () => {
   const allApplications = useMemo(
     () => workspace?.pipeline?.stages?.flatMap((stage) => stage.items || []) || [],
     [workspace],
+  );
+
+  const strongestSurface = useMemo(() => {
+    if (!workspace?.readiness?.items?.length) return null;
+    return [...workspace.readiness.items].sort((left, right) => right.score - left.score)[0];
+  }, [workspace]);
+
+  const weakestSurface = useMemo(() => {
+    if (!workspace?.readiness?.items?.length) return null;
+    return [...workspace.readiness.items].sort((left, right) => left.score - right.score)[0];
+  }, [workspace]);
+
+  const recentApplications = useMemo(
+    () =>
+      [...allApplications]
+        .sort((left, right) => new Date(right.updatedAt || 0) - new Date(left.updatedAt || 0))
+        .slice(0, 6),
+    [allApplications],
   );
 
   const handleCreateApplication = async () => {
@@ -209,119 +330,341 @@ const HomePage = () => {
   }
 
   const { hero, focus, pipeline, readiness, insights, assets, analytics } = workspace;
+  const nextActionMeta = ACTION_META[hero.nextBestAction.category] || ACTION_META.momentum;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(217,119,6,0.15),_transparent_24%),linear-gradient(180deg,#f8f3ea_0%,#efe1cb_100%)] text-[#21170f]">
-      <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
-        <section className="rounded-[32px] border border-[#eadbc5] bg-[linear-gradient(135deg,rgba(255,253,249,0.96),rgba(247,236,219,0.94))] p-6 shadow-[0_24px_70px_rgba(93,58,22,0.12)]">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#e7cfad] bg-[#fff9f0] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#ad5c10]">
-                <Sparkles size={14} />
-                Dashboard Spec Live
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.16),_transparent_24%),radial-gradient(circle_at_top_right,_rgba(14,165,233,0.12),_transparent_22%),linear-gradient(180deg,_#fffaf2_0%,_#f3e7d2_100%)] text-[#1e140d]">
+      <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+        <section className="overflow-hidden rounded-[36px] border border-[#ead8c0] bg-[#1b140f] text-white shadow-[0_30px_90px_rgba(61,36,10,0.24)]">
+          <div className="grid gap-8 px-6 py-7 lg:grid-cols-[1.3fr_0.7fr] lg:px-8 lg:py-8">
+            <div className="relative">
+              <div className="absolute -left-16 top-0 h-48 w-48 rounded-full bg-orange-500/20 blur-3xl" />
+              <div className="absolute left-36 top-24 h-40 w-40 rounded-full bg-sky-400/10 blur-3xl" />
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#fdba74] bg-[#fff1dc] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#7c2d12] shadow-[0_10px_30px_rgba(251,146,60,0.18)]">
+                  <Sparkles size={14} />
+                  ElevateX Command Center
+                </div>
+                <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+                  {hero.welcomeName}, focus the product around proof, momentum, and your next win.
+                </h1>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-[#efe4d7] sm:text-base">
+                  This dashboard now pushes the user toward one immediate move, one proof-building action,
+                  and one conversion loop instead of showing every tool with equal weight.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <DashboardActionLink
+                    href={nextActionMeta.href}
+                    className="bg-white text-[#1b140f] hover:bg-[#f7ead6]"
+                  >
+                    {nextActionMeta.cta}
+                    <ArrowRight size={16} />
+                  </DashboardActionLink>
+                  <DashboardActionLink
+                    href="/career/plan"
+                    className="border border-white/15 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    Open career plan
+                  </DashboardActionLink>
+                </div>
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">Target Role</div>
+                    <div className="mt-3 text-2xl font-semibold">{hero.targetRole}</div>
+                    <div className="mt-2 text-sm text-[#f0e4d8]">Everything below is prioritized for this direction.</div>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                    <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">Next Best Action</div>
+                    <div className="mt-3 text-lg font-semibold">{hero.nextBestAction.title}</div>
+                    <div className="mt-2 text-sm text-[#f0e4d8]">{hero.nextBestAction.detail}</div>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-orange-500/20 to-transparent p-4">
+                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.24em] text-[#ffd8b0]">
+                      <Flame size={14} />
+                      Momentum
+                    </div>
+                    <div className="mt-3 text-3xl font-semibold">{hero.momentum.score}</div>
+                    <div className="mt-2 text-sm text-[#f2dcc8]">
+                      {hero.momentum.activeApplications} active apps and {hero.momentum.interviewsInFlight} interviews in flight.
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-                {hero.welcomeName}, this is your hiring command center.
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#6f5d47] sm:text-base">
-                Product spec implemented: hero strip, action queue, live application pipeline,
-                readiness matrix, insights rail, evidence vault, and movement analytics.
-              </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-3xl bg-[#1d160f] px-5 py-4 text-white shadow-lg">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#c8b294]">Hireability</div>
-                <div className="mt-2 text-4xl font-semibold">{hero.hireabilityScore}</div>
-                <div className="mt-2 text-sm text-[#d9cab6]">Weighted from resume, interview, skills, portfolio, proof.</div>
-              </div>
-              <div className="rounded-3xl border border-[#eadbc5] bg-white px-5 py-4">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Target Role</div>
-                <div className="mt-2 text-xl font-semibold">{hero.targetRole}</div>
-                <div className="mt-2 text-sm text-[#6f5d47]">Your dashboard adapts around this role.</div>
-              </div>
-              <div className="rounded-3xl border border-[#eadbc5] bg-white px-5 py-4">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Next Best Action</div>
-                <div className="mt-2 text-base font-semibold">{hero.nextBestAction.title}</div>
-                <div className="mt-2 text-sm text-[#6f5d47]">{hero.nextBestAction.detail}</div>
-              </div>
-              <div className="rounded-3xl border border-[#eadbc5] bg-white px-5 py-4">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[#7a6c59]">
-                  <Flame size={14} />
-                  This Week&apos;s Momentum
+            <div className="grid gap-4">
+              <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04))] p-5">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">North Star</div>
+                <div className="mt-4 flex items-end justify-between gap-4">
+                  <div>
+                    <div className="text-6xl font-semibold">{hero.hireabilityScore}</div>
+                    <div className="mt-2 text-sm text-[#f0e4d8]">Current hireability score</div>
+                  </div>
+                  <div className="rounded-full border border-[#fdba74]/50 bg-[#fff1dc] px-4 py-2 text-sm font-semibold text-[#7c2d12]">
+                    Built for clarity
+                  </div>
                 </div>
-                <div className="mt-2 text-4xl font-semibold">{hero.momentum.score}</div>
-                <div className="mt-2 text-sm text-[#6f5d47]">
-                  {hero.momentum.activeApplications} active apps · {hero.momentum.interviewsInFlight} interviews in flight
+                <div className="mt-5 h-3 rounded-full bg-white/10">
+                  <div
+                    className="h-3 rounded-full bg-gradient-to-r from-orange-400 via-amber-300 to-sky-300"
+                    style={{ width: `${hero.hireabilityScore}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">Strongest Surface</div>
+                  <div className="mt-3 text-xl font-semibold">{strongestSurface?.label || "Not enough data"}</div>
+                  <div className="mt-2 text-sm text-[#f0e4d8]">
+                    {strongestSurface ? `${strongestSurface.score}/100` : "Start creating signals"}
+                  </div>
+                </div>
+                <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">Weakest Surface</div>
+                  <div className="mt-3 text-xl font-semibold">{weakestSurface?.label || "Not enough data"}</div>
+                  <div className="mt-2 text-sm text-[#f0e4d8]">
+                    {weakestSurface ? `${weakestSurface.score}/100` : "No scores yet"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
+                <div className="text-[11px] uppercase tracking-[0.24em] text-[#f5dec5]">Pipeline Snapshot</div>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <div>
+                    <div className="text-2xl font-semibold">{pipeline.totals.all}</div>
+                    <div className="text-xs text-[#f0e4d8]">total targets</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-semibold">{pipeline.totals.interviews}</div>
+                    <div className="text-xs text-[#f0e4d8]">interviews</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-semibold">{pipeline.totals.offers}</div>
+                    <div className="text-xs text-[#f0e4d8]">offers</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.6fr,1fr]">
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
+        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-[28px] border border-[#eadbc5] bg-white/90 p-5 shadow-[0_20px_60px_rgba(89,60,27,0.08)]">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Hireability</div>
+            <div className="mt-3 text-4xl font-semibold">{hero.hireabilityScore}</div>
+            <div className="mt-2 text-sm text-[#6e5b46]">Weighted across resume, interview, skills, proof, and portfolio.</div>
+          </div>
+          <div className="rounded-[28px] border border-[#eadbc5] bg-white/90 p-5 shadow-[0_20px_60px_rgba(89,60,27,0.08)]">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Active Pipeline</div>
+            <div className="mt-3 text-4xl font-semibold">{pipeline.totals.active}</div>
+            <div className="mt-2 text-sm text-[#6e5b46]">Live opportunities the system can optimize against right now.</div>
+          </div>
+          <div className="rounded-[28px] border border-[#eadbc5] bg-white/90 p-5 shadow-[0_20px_60px_rgba(89,60,27,0.08)]">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Best Resume</div>
+            <div className="mt-3 text-4xl font-semibold">
+              {readiness.items.find((item) => item.key === "resume")?.score || 0}
+            </div>
+            <div className="mt-2 text-sm text-[#6e5b46]">Your strongest recruiter-facing document score today.</div>
+          </div>
+          <div className="rounded-[28px] border border-[#eadbc5] bg-white/90 p-5 shadow-[0_20px_60px_rgba(89,60,27,0.08)]">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Movement</div>
+            <div className="mt-3 inline-flex items-center gap-2 text-2xl font-semibold">
+              <TrendingUp size={22} className="text-[#c56c19]" />
+              {movementLabel(analytics.labels.sevenDay)}
+            </div>
+            <div className="mt-2 text-sm text-[#6e5b46]">Seven-day activity trend across learning, interviews, resumes, and applications.</div>
+          </div>
+        </section>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <section className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Focus Panel</div>
-                <h2 className="mt-2 text-2xl font-semibold">Today&apos;s 3 highest-leverage tasks</h2>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Action Queue</div>
+                <h2 className="mt-2 text-2xl font-semibold">Three things that move the user forward</h2>
               </div>
-              <Target className="text-[#c27123]" />
+              <Target className="text-[#c56c19]" />
             </div>
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              {focus.tasks.map((task, index) => (
-                <div key={`${task.title}-${index}`} className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                  <div className="inline-flex rounded-full bg-[#22180f] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white">
-                    {task.category}
+
+            <div className="mt-5 space-y-4">
+              {focus.tasks.map((task, index) => {
+                const action = ACTION_META[task.category] || ACTION_META.momentum;
+
+                return (
+                  <div
+                    key={`${task.title}-${index}`}
+                    className="rounded-[26px] border border-[#efe3d2] bg-[linear-gradient(135deg,#fff8ef_0%,#fffdf9_100%)] p-5"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="max-w-2xl">
+                        <div className="inline-flex rounded-full bg-[#20160f] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-white">
+                          {action.eyebrow}
+                        </div>
+                        <h3 className="mt-4 text-xl font-semibold">{task.title}</h3>
+                        <p className="mt-3 text-sm leading-7 text-[#6e5b46]">{task.detail}</p>
+                      </div>
+                      <div className="flex items-center gap-3 lg:flex-col lg:items-end">
+                        <div className="rounded-full bg-[#f3e1c9] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#a45a16]">
+                          {task.impact} impact
+                        </div>
+                        <DashboardActionLink
+                          href={action.href}
+                          className="bg-[#20160f] text-white hover:bg-[#362518]"
+                        >
+                          {action.cta}
+                          <ArrowRight size={15} />
+                        </DashboardActionLink>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold">{task.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-[#6f5d47]">{task.detail}</p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#c27123]">
-                    {task.impact} impact
-                    <ArrowRight size={14} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-            <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Insights Rail</div>
-            <h2 className="mt-2 text-2xl font-semibold">Guidance, risks, trends, blockers</h2>
+          <section className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Quick Launch</div>
+                <h2 className="mt-2 text-2xl font-semibold">Push users into core loops</h2>
+              </div>
+              <Sparkles className="text-[#c56c19]" />
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              {QUICK_LINKS.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.title}
+                    to={item.href}
+                    className={`group rounded-[26px] bg-gradient-to-br ${item.theme} p-[1px] transition hover:-translate-y-0.5`}
+                  >
+                    <div className="h-full rounded-[25px] bg-[#fffaf4] p-5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[#20160f] text-white">
+                          <Icon size={20} />
+                        </div>
+                        <ArrowRight size={18} className="text-[#8f744e] transition group-hover:translate-x-1" />
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-6 text-[#6e5b46]">{item.description}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <section className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Readiness Stack</div>
+                <h2 className="mt-2 text-2xl font-semibold">What is strong and what is leaking</h2>
+              </div>
+              <CheckCircle2 className="text-[#c56c19]" />
+            </div>
+
             <div className="mt-5 space-y-4">
-              <div className="rounded-3xl bg-[#1d160f] p-5 text-white">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[#c8b294]">
-                  <Sparkles size={14} />
-                  AI Guidance
-                </div>
-                <ul className="mt-4 space-y-3 text-sm leading-7 text-[#e7dbcb]">
+              {readiness.items.map((item) => {
+                const Icon = READINESS_ICONS[item.key] || CheckCircle2;
+
+                return (
+                  <div key={item.key} className="rounded-[24px] border border-[#efe3d2] bg-[#fff8ef] p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-3">
+                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white shadow-sm">
+                          <Icon size={18} className="text-[#c56c19]" />
+                        </div>
+                        <div>
+                          <div className="font-semibold">{item.label}</div>
+                          <div className="mt-1 text-sm text-[#6e5b46]">{item.detail}</div>
+                        </div>
+                      </div>
+                      <div className={`rounded-2xl px-3 py-2 text-sm font-semibold ${scoreTone(item.score)}`}>
+                        {item.score}/100
+                      </div>
+                    </div>
+                    <div className="mt-4 h-2 rounded-full bg-[#eadbc5]">
+                      <div className="h-2 rounded-full bg-[#c56c19]" style={{ width: `${item.score}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Signals</div>
+                <h2 className="mt-2 text-2xl font-semibold">Guidance, risk, and movement</h2>
+              </div>
+              <BarChart3 className="text-[#c56c19]" />
+            </div>
+
+            <div className="mt-5 grid gap-4">
+              <div className="rounded-[24px] bg-[#1c1510] p-5 text-white">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#ddc6a8]">AI Guidance</div>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-[#eadccf]">
                   {insights.guidance.map((item, index) => (
-                    <li key={`${item}-${index}`}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-3xl border border-[#f0d5d5] bg-[#fff6f6] p-5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[#a43f3f]">
-                  <AlertTriangle size={14} />
-                  Risks
-                </div>
-                <ul className="mt-4 space-y-3 text-sm leading-7 text-[#7a4a4a]">
-                  {insights.risks.map((item, index) => (
-                    <li key={`${item}-${index}`}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-3xl border border-[#eadbc5] bg-[#fffaf3] p-5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-[#7a6c59]">
-                  <BarChart3 size={14} />
-                  Trends & Blockers
-                </div>
-                <div className="mt-4 space-y-3 text-sm leading-7 text-[#6f5d47]">
-                  {insights.trends.map((item, index) => (
                     <div key={`${item}-${index}`}>{item}</div>
                   ))}
-                  {insights.blockers.map((item, index) => (
-                    <div key={`${item}-${index}`} className="font-medium text-[#a43f3f]">{item}</div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-[24px] border border-[#f2d7d4] bg-[#fff6f5] p-5">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-[#b14943]">
+                    <AlertTriangle size={14} />
+                    Risks
+                  </div>
+                  <div className="mt-4 space-y-3 text-sm leading-7 text-[#764643]">
+                    {insights.risks.map((item, index) => (
+                      <div key={`${item}-${index}`}>{item}</div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-[#eadbc5] bg-[#fff8ef] p-5">
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Blockers</div>
+                  <div className="mt-4 space-y-3 text-sm leading-7 text-[#6e5b46]">
+                    {insights.blockers.length ? (
+                      insights.blockers.map((item, index) => (
+                        <div key={`${item}-${index}`}>{item}</div>
+                      ))
+                    ) : (
+                      <div>No major blockers detected. Keep compounding the core loops.</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[#eadbc5] bg-[#fff8ef] p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">7-Day Movement</div>
+                    <div className="mt-2 text-sm text-[#6e5b46]">
+                      {movementLabel(analytics.labels.sevenDay)} in the last seven days
+                    </div>
+                  </div>
+                  <div className="rounded-full bg-[#f3e1c9] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#a45a16]">
+                    Weekly pulse
+                  </div>
+                </div>
+                <div className="mt-5">
+                  <Chart series={analytics.sevenDayMovement} />
+                </div>
+                <div className="mt-4 space-y-2 text-sm text-[#6e5b46]">
+                  {insights.trends.map((item, index) => (
+                    <div key={`${item}-${index}`}>{item}</div>
                   ))}
                 </div>
               </div>
@@ -329,16 +672,23 @@ const HomePage = () => {
           </section>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.3fr,1fr]">
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <section
+            id="pipeline"
+            className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]"
+          >
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Application Pipeline</div>
-                <h2 className="mt-2 text-2xl font-semibold">Live pipeline tied to prep assets</h2>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Pipeline</div>
+                <h2 className="mt-2 text-2xl font-semibold">Live opportunities, simplified</h2>
+                <p className="mt-2 text-sm text-[#6e5b46]">
+                  Keep the dashboard focused on the most recent targets instead of a full kanban wall.
+                </p>
               </div>
+
               <div className="grid gap-3 sm:grid-cols-4">
                 <input
-                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf3] px-4 py-3 text-sm outline-none"
+                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf4] px-4 py-3 text-sm outline-none"
                   placeholder="Company"
                   value={applicationForm.company}
                   onChange={(event) =>
@@ -346,7 +696,7 @@ const HomePage = () => {
                   }
                 />
                 <input
-                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf3] px-4 py-3 text-sm outline-none"
+                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf4] px-4 py-3 text-sm outline-none"
                   placeholder="Role"
                   value={applicationForm.role}
                   onChange={(event) =>
@@ -354,7 +704,7 @@ const HomePage = () => {
                   }
                 />
                 <input
-                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf3] px-4 py-3 text-sm outline-none"
+                  className="rounded-2xl border border-[#eadbc5] bg-[#fffaf4] px-4 py-3 text-sm outline-none"
                   placeholder="Source"
                   value={applicationForm.source}
                   onChange={(event) =>
@@ -362,189 +712,113 @@ const HomePage = () => {
                   }
                 />
                 <button
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1d160f] px-4 py-3 text-sm font-semibold text-white"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#20160f] px-4 py-3 text-sm font-semibold text-white"
                   onClick={handleCreateApplication}
                   disabled={busy === "create-app"}
                 >
                   <Plus size={16} />
-                  Add
+                  Add target
                 </button>
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 xl:grid-cols-6">
+            <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
               {pipeline.stages.map((stage) => (
-                <div key={stage.key} className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${STAGE_META[stage.key].color}`}>
-                      {stage.label}
-                    </div>
-                    <div className="text-lg font-semibold">{stage.count}</div>
+                <div key={stage.key} className="rounded-[22px] border border-[#efe3d2] bg-[#fff8ef] p-4">
+                  <div className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${STAGE_META[stage.key].tone}`}>
+                    {stage.label}
                   </div>
-                  <div className="mt-4 space-y-3">
-                    {stage.items.length === 0 ? (
-                      <div className="rounded-2xl border border-dashed border-[#eadbc5] p-3 text-xs text-[#8a7a66]">
-                        No applications here yet.
-                      </div>
-                    ) : (
-                      stage.items.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-[#eadbc5] bg-white p-3">
-                          <div className="font-semibold">{item.company}</div>
-                          <div className="mt-1 text-xs text-[#7a6c59]">{item.role}</div>
-                          <div className="mt-1 text-[11px] text-[#9a8466]">{item.resumeTitle || "No resume linked"}</div>
-                          <select
-                            className="mt-3 w-full rounded-xl border border-[#eadbc5] bg-[#fffaf3] px-3 py-2 text-xs"
-                            value={item.status}
-                            onChange={(event) => handleStatusChange(item.id, event.target.value)}
-                            disabled={busy === item.id}
-                          >
-                            {Object.entries(STAGE_META).map(([key, meta]) => (
-                              <option key={key} value={key}>
-                                {meta.label}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            className="mt-2 text-xs font-semibold text-[#b14f4f]"
-                            onClick={() => handleDeleteApplication(item.id)}
-                            disabled={busy === item.id}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <div className="mt-3 text-3xl font-semibold">{stage.count}</div>
                 </div>
               ))}
             </div>
-          </section>
 
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-            <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Readiness Matrix</div>
-            <h2 className="mt-2 text-2xl font-semibold">Resume, interview, skills, portfolio, proof</h2>
             <div className="mt-5 space-y-4">
-              {readiness.items.map((item) => {
-                const Icon = READINESS_ICONS[item.key] || CheckCircle2;
-                return (
-                  <div key={item.key} className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-2xl bg-white p-3 shadow-sm">
-                          <Icon size={18} className="text-[#c27123]" />
+              {recentApplications.length ? (
+                recentApplications.map((item) => (
+                  <div key={item.id} className="rounded-[24px] border border-[#efe3d2] bg-[#fffdf9] p-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="text-lg font-semibold">{item.company}</div>
+                          <div className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${STAGE_META[item.status]?.tone || STAGE_META.wishlist.tone}`}>
+                            {STAGE_META[item.status]?.label || item.status}
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold">{item.label}</div>
-                          <div className="text-sm text-[#6f5d47]">{item.detail}</div>
+                        <div className="mt-2 text-sm text-[#6e5b46]">{item.role}</div>
+                        <div className="mt-2 text-xs text-[#8f7a61]">
+                          {item.resumeTitle || "No resume linked"} • Updated {formatDate(item.updatedAt)}
                         </div>
                       </div>
-                      <div className={`rounded-2xl px-4 py-3 text-lg font-semibold ${scoreTone(item.score)}`}>
-                        {item.score}
-                      </div>
-                    </div>
-                    <div className="mt-4 h-2 rounded-full bg-[#eadbc5]">
-                      <div className="h-2 rounded-full bg-[#c27123]" style={{ width: `${item.score}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.3fr,1fr]">
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Evidence & Assets</div>
-                <h2 className="mt-2 text-2xl font-semibold">Resume versions, projects, certificates</h2>
-              </div>
-              <Trophy className="text-[#c27123]" />
-            </div>
-
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Resume Versions</div>
-                <div className="mt-4 space-y-3">
-                  {assets.resumeVersions.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                      <div className="font-semibold">{item.title}</div>
-                      <div className="mt-1 text-sm text-[#6f5d47]">{item.targetCompany || "General"} · {item.targetRole || "Open role"}</div>
-                      <div className="mt-2 inline-flex rounded-full bg-[#1d160f] px-3 py-1 text-xs font-semibold text-white">
-                        Score {item.score}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Projects</div>
-                <div className="mt-4 space-y-3">
-                  {assets.projects.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                      <div className="font-semibold">{item.title}</div>
-                      <div className="mt-2 text-sm text-[#6f5d47]">{item.link}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Portfolio Assets</div>
-                <div className="mt-4 space-y-3">
-                  {assets.portfolioAssets.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold">{item.title}</div>
-                          <div className="mt-1 text-xs uppercase tracking-[0.2em] text-[#9a8466]">{item.type}</div>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <select
+                          className="rounded-xl border border-[#eadbc5] bg-[#fff8ef] px-3 py-2 text-sm"
+                          value={item.status}
+                          onChange={(event) => handleStatusChange(item.id, event.target.value)}
+                          disabled={busy === item.id}
+                        >
+                          {Object.entries(STAGE_META).map(([key, meta]) => (
+                            <option key={key} value={key}>
+                              {meta.label}
+                            </option>
+                          ))}
+                        </select>
                         <button
-                          className="text-xs font-semibold text-[#b14f4f]"
-                          onClick={() => handleDeleteAsset(item.id)}
+                          className="text-sm font-semibold text-[#b14943]"
+                          onClick={() => handleDeleteApplication(item.id)}
                           disabled={busy === item.id}
                         >
                           Remove
                         </button>
                       </div>
-                      <div className="mt-2 text-sm text-[#6f5d47]">{item.description}</div>
-                      {item.metrics?.length ? (
-                        <div className="mt-3 text-xs text-[#8a7a66]">{item.metrics[0]}</div>
-                      ) : null}
                     </div>
-                  ))}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-[#e7d5bc] bg-[#fffaf4] p-6 text-sm text-[#6e5b46]">
+                  No live targets yet. Add a company so the dashboard can prioritize your learning and prep against a real goal.
                 </div>
-              </div>
+              )}
+            </div>
+          </section>
 
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Certificates</div>
-                <div className="mt-4 space-y-3">
-                  {assets.certificates.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                      <div className="font-semibold">Certification proof</div>
-                      <div className="mt-1 text-sm text-[#6f5d47]">Score {item.score}</div>
-                      <div className="mt-2 text-xs text-[#8a7a66]">{new Date(item.issuedAt).toLocaleDateString()}</div>
-                    </div>
-                  ))}
-                </div>
+          <section className="rounded-[30px] border border-[#eadbc5] bg-white/92 p-6 shadow-[0_24px_70px_rgba(89,60,27,0.08)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#866f55]">Proof Vault</div>
+                <h2 className="mt-2 text-2xl font-semibold">Evidence that earns trust</h2>
               </div>
+              <Trophy className="text-[#c56c19]" />
             </div>
 
-            <div className="mt-6 grid gap-4 xl:grid-cols-[1fr,1.2fr]">
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Add Portfolio Asset</div>
-                <div className="mt-4 grid gap-3">
-                  <input
-                    className="rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
-                    placeholder="Asset title"
-                    value={assetForm.title}
-                    onChange={(event) =>
-                      setAssetForm((current) => ({ ...current, title: event.target.value }))
-                    }
-                  />
+            <div className="mt-5 space-y-4">
+              <div className="rounded-[24px] border border-[#efe3d2] bg-[#fff8ef] p-4">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-[#866f55]">Resume Versions</div>
+                <div className="mt-4 space-y-3">
+                  {assets.resumeVersions.length ? (
+                    assets.resumeVersions.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
+                        <div className="font-semibold">{item.title}</div>
+                        <div className="mt-1 text-sm text-[#6e5b46]">
+                          {item.targetRole || "Open role"} {item.targetCompany ? `• ${item.targetCompany}` : ""}
+                        </div>
+                        <div className="mt-3 inline-flex rounded-full bg-[#20160f] px-3 py-1 text-xs font-semibold text-white">
+                          Score {item.score}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl bg-white p-4 text-sm text-[#6e5b46]">No resume versions yet.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[#efe3d2] bg-[#fff8ef] p-4">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-[#866f55]">Add Portfolio Proof</div>
+                <div className="mt-4 space-y-3">
                   <select
-                    className="rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
+                    className="w-full rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
                     value={assetForm.type}
                     onChange={(event) =>
                       setAssetForm((current) => ({ ...current, type: event.target.value }))
@@ -552,141 +826,87 @@ const HomePage = () => {
                   >
                     <option value="case_study">Case study</option>
                     <option value="project">Project</option>
-                    <option value="landing_page">Landing page</option>
-                    <option value="github_repo">GitHub repo</option>
-                    <option value="writeup">Writeup</option>
+                    <option value="artifact">Artifact</option>
+                    <option value="presentation">Presentation</option>
                   </select>
                   <input
-                    className="rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
-                    placeholder="Public link"
+                    className="w-full rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
+                    placeholder="Case study or asset title"
+                    value={assetForm.title}
+                    onChange={(event) =>
+                      setAssetForm((current) => ({ ...current, title: event.target.value }))
+                    }
+                  />
+                  <input
+                    className="w-full rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
+                    placeholder="Link"
                     value={assetForm.link}
                     onChange={(event) =>
                       setAssetForm((current) => ({ ...current, link: event.target.value }))
                     }
                   />
                   <textarea
-                    className="min-h-[96px] rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
-                    placeholder="What proof does this asset show?"
+                    className="min-h-[90px] w-full rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
+                    placeholder="What did you build, improve, or prove?"
                     value={assetForm.description}
                     onChange={(event) =>
                       setAssetForm((current) => ({ ...current, description: event.target.value }))
                     }
                   />
                   <textarea
-                    className="min-h-[96px] rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
-                    placeholder="One metric per line"
+                    className="min-h-[100px] w-full rounded-2xl border border-[#eadbc5] bg-white px-4 py-3 text-sm outline-none"
+                    placeholder="Metrics, one per line"
                     value={assetForm.metrics}
                     onChange={(event) =>
                       setAssetForm((current) => ({ ...current, metrics: event.target.value }))
                     }
                   />
                   <button
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1d160f] px-4 py-3 text-sm font-semibold text-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#20160f] px-4 py-3 text-sm font-semibold text-white"
                     onClick={handleCreateAsset}
                     disabled={busy === "create-asset"}
                   >
                     <Plus size={16} />
-                    Add asset
+                    Add proof
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-                <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Callback Attribution</div>
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    <div className="font-semibold">Resume Versions</div>
-                    <div className="mt-3 space-y-3">
-                      {assets.attribution?.resumeVersions?.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-[#efe2cf] p-3">
-                          <div className="font-medium">{item.title}</div>
-                          <div className="mt-2 text-sm text-[#6f5d47]">
-                            {item.callbacks} callbacks from {item.uses} uses
+              <div className="rounded-[24px] border border-[#efe3d2] bg-[#fff8ef] p-4">
+                <div className="text-[11px] uppercase tracking-[0.2em] text-[#866f55]">Portfolio Assets</div>
+                <div className="mt-4 space-y-3">
+                  {assets.portfolioAssets.length ? (
+                    assets.portfolioAssets.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold">{item.title}</div>
+                            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-[#8f7a61]">{item.type}</div>
                           </div>
-                          <div className="mt-2 inline-flex rounded-full bg-[#1d160f] px-3 py-1 text-xs font-semibold text-white">
-                            {item.callbackRate}% callback rate
-                          </div>
+                          <button
+                            className="text-sm font-semibold text-[#b14943]"
+                            onClick={() => handleDeleteAsset(item.id)}
+                            disabled={busy === item.id}
+                          >
+                            Remove
+                          </button>
                         </div>
-                      ))}
+                        <div className="mt-2 text-sm text-[#6e5b46]">{item.description || "No description yet."}</div>
+                        {item.metrics?.length ? (
+                          <div className="mt-3 text-xs text-[#8f7a61]">{item.metrics[0]}</div>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl bg-white p-4 text-sm text-[#6e5b46]">
+                      No portfolio proof yet. Add one asset to make applications more credible.
                     </div>
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    <div className="font-semibold">Portfolio Assets</div>
-                    <div className="mt-3 space-y-3">
-                      {assets.attribution?.portfolioAssets?.map((item) => (
-                        <div key={item.id} className="rounded-2xl border border-[#efe2cf] p-3">
-                          <div className="font-medium">{item.title}</div>
-                          <div className="mt-2 text-sm text-[#6f5d47]">
-                            {item.callbacks} callbacks from {item.uses} linked applications
-                          </div>
-                          <div className="mt-2 inline-flex rounded-full bg-[#0f766e] px-3 py-1 text-xs font-semibold text-white">
-                            {item.callbackRate}% callback rate
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-            <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Pipeline Summary</div>
-            <h2 className="mt-2 text-2xl font-semibold">Stage totals</h2>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {pipeline.stages.map((stage) => (
-                <div key={stage.key} className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-4">
-                  <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${STAGE_META[stage.key].color}`}>
-                    {stage.label}
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold">{stage.count}</div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 rounded-3xl bg-[#1d160f] p-5 text-white">
-              <div className="text-xs uppercase tracking-[0.24em] text-[#c8b294]">Active Pipeline</div>
-              <div className="mt-3 text-4xl font-semibold">{pipeline.totals.active}</div>
-              <div className="mt-2 text-sm text-[#dfd1bd]">
-                {pipeline.totals.interviews} interviews · {pipeline.totals.offers} offers · {allApplications.length} total tracked
               </div>
             </div>
           </section>
         </div>
-
-        <section className="mt-6 rounded-[28px] border border-[#eadbc5] bg-white/95 p-6 shadow-[0_16px_50px_rgba(98,64,29,0.08)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Progress & Trend Analytics</div>
-              <h2 className="mt-2 text-2xl font-semibold">7-day and 30-day movement</h2>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#fffaf3] px-4 py-2 text-sm font-medium text-[#7a6c59]">
-              <TrendingUp size={16} />
-              7-day: {analytics.labels.sevenDay} · 30-day: {analytics.labels.thirtyDay}
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-6 xl:grid-cols-3">
-            <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-              <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">7-day movement</div>
-              <div className="mt-4">
-                <Chart series={analytics.sevenDayMovement} color="bg-[#c27123]" />
-              </div>
-            </div>
-            <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-              <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">30-day movement</div>
-              <div className="mt-4">
-                <Chart series={analytics.thirtyDayMovement} color="bg-[#1d160f]" />
-              </div>
-            </div>
-            <div className="rounded-3xl border border-[#efe2cf] bg-[#fffaf3] p-5">
-              <div className="text-xs uppercase tracking-[0.24em] text-[#7a6c59]">Application growth</div>
-              <div className="mt-4">
-                <Chart series={analytics.applicationTrend.slice(-7)} color="bg-[#0f766e]" />
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );
