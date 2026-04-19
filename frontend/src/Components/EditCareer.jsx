@@ -13,15 +13,15 @@ import {
 } from "../lib/careerProfile";
 
 const chipClass = (active) =>
-  `rounded-full border px-3 py-2 text-sm transition ${
+  `rounded-full border px-3 py-2 text-sm font-medium transition ${
     active
-      ? "border-slate-900 bg-slate-900 text-white"
-      : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
+      ? "border-[#20160f] bg-[#20160f] text-white"
+      : "border-[#e8d8c2] bg-[#fffaf4] text-[#6e5b46] hover:border-[#d39b5e] hover:text-[#1e140d]"
   }`;
 
 const Section = ({ title, children }) => (
-  <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-    <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+  <div className="rounded-[26px] border border-[#efe3d2] bg-[linear-gradient(135deg,#fff8ef_0%,#fffdf9_100%)] p-5">
+    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#866f55]">{title}</div>
     <div className="mt-4">{children}</div>
   </div>
 );
@@ -32,16 +32,16 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
       <Section title="Career Direction">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Current role</span>
+            <span className="mb-2 block text-sm font-medium text-[#3f2d1f]">Current role</span>
             <input
               value={formData.currentRole}
               onChange={(event) => onFieldChange("currentRole", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             />
           </label>
 
           <div>
-            <span className="mb-2 block text-sm font-medium text-slate-700">Target roles</span>
+            <span className="mb-2 block text-sm font-medium text-[#3f2d1f]">Target roles</span>
             <div className="flex flex-wrap gap-2">
               {CAREER_ROLE_OPTIONS.map((option) => (
                 <button
@@ -79,7 +79,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.education}
               onChange={(event) => onFieldChange("education", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Education</option>
               {EDUCATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -87,7 +87,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.experience}
               onChange={(event) => onFieldChange("experience", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Experience</option>
               {EXPERIENCE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -95,7 +95,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.timeline}
               onChange={(event) => onFieldChange("timeline", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Timeline</option>
               {TIMELINE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -103,7 +103,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.availability}
               onChange={(event) => onFieldChange("availability", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Availability</option>
               {AVAILABILITY_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -116,7 +116,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.learningStyle}
               onChange={(event) => onFieldChange("learningStyle", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Learning style</option>
               {LEARNING_STYLE_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -124,7 +124,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.collaborationStyle}
               onChange={(event) => onFieldChange("collaborationStyle", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Collaboration style</option>
               {COLLABORATION_OPTIONS.map((option) => <option key={option}>{option}</option>)}
@@ -132,7 +132,7 @@ const EditCareer = ({ formData, onFieldChange, onToggle }) => {
             <select
               value={formData.riskAppetite}
               onChange={(event) => onFieldChange("riskAppetite", event.target.value)}
-              className="w-full rounded-2xl border border-slate-300 px-4 py-3"
+              className="w-full rounded-[20px] border border-[#e8d8c2] bg-[#fffaf4] px-4 py-3 text-[#1e140d] outline-none transition focus:border-[#d39b5e] focus:ring-4 focus:ring-[#f5dfc0]"
             >
               <option value="">Risk appetite</option>
               {RISK_OPTIONS.map((option) => <option key={option}>{option}</option>)}
